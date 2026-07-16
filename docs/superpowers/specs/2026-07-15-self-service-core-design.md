@@ -293,6 +293,12 @@ existing sign-in path continues to work.
 - Dialog focus is trapped and restored by the existing Radix primitive.
 - Native select and date-time controls retain keyboard behavior.
 
+Implementation discovery: the Slice 1 dialog close control was labeled
+`Close celebration`. Because Slice 2 reuses the primitive for project and task
+forms, `src/components/ui/dialog.tsx` now uses the accurate generic label
+`Close dialog`. This is the second and final shared-foundation file added to
+the approved manifest after design review.
+
 Task deadline controls submit an ISO timestamp derived from the visible local
 date-time. The server validates it before creating a `Date`. The user's profile
 timezone remains authoritative for Focus work dates and streak behavior.
@@ -475,6 +481,7 @@ remains unchanged.
 - `docs/superpowers/plans/2026-07-15-momentum-mvp.md`
 - `supabase/config.toml`
 - `supabase/seed.sql`
+- `src/components/ui/dialog.tsx`
 - `src/proxy.ts`
 - `src/app/(auth)/sign-in/page.tsx`
 - `src/app/(app)/layout.tsx`

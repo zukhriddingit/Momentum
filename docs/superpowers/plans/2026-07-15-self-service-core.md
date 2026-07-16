@@ -483,6 +483,7 @@ git commit -m "feat: add workspace onboarding"
 - Create: `src/server/projects/update-project.ts`
 - Create: `src/app/(app)/workspaces/[workspaceId]/page.tsx`
 - Create: `tests/integration/project-and-task-authorization.test.ts`
+- Modify: `src/components/ui/dialog.tsx` (documented generic close-label correction)
 - Modify: `src/features/onboarding/onboarding-flow.tsx`
 - Modify: `src/app/(app)/layout.tsx`
 - Modify: `src/features/dashboard/dashboard-cards.tsx`
@@ -545,7 +546,7 @@ join public.workspace_memberships as membership
 
 The project step in `OnboardingFlow` calls `createProjectAction` and pushes to `/workspaces/${workspaceId}/projects/${projectId}`. `WorkspaceSwitcher` uses labeled native selects and `router.push`; it never accepts options outside the server-produced navigation view.
 
-Add workspace/project navigation to the authenticated layout. Add the workspace landing page with project cards, a zero-project empty state, and owner/admin create control. Add an edit-project dialog to the project page for owner/admin view models.
+Add workspace/project navigation to the authenticated layout. Add the workspace landing page with project cards, a zero-project empty state, and owner/admin create control. Add an edit-project dialog to the project page for owner/admin view models. Replace the shared dialog primitive's hardcoded `Close celebration` label with the generic `Close dialog` so every form dialog has an accurate accessible close name.
 
 - [ ] **Step 6: Run focused validation**
 
@@ -559,7 +560,7 @@ pnpm typecheck
 - [ ] **Step 7: Commit project management**
 
 ```bash
-git add src/features/workspaces/workspace-switcher.tsx src/features/projects src/server/workspaces/get-workspace-overview.ts src/server/projects src/app/\(app\) src/features/dashboard/dashboard-cards.tsx src/server/types.ts tests/integration/project-and-task-authorization.test.ts
+git add src/components/ui/dialog.tsx src/features/workspaces/workspace-switcher.tsx src/features/projects src/server/workspaces/get-workspace-overview.ts src/server/projects src/app/\(app\) src/features/dashboard/dashboard-cards.tsx src/server/types.ts tests/integration/project-and-task-authorization.test.ts
 git commit -m "feat: add workspace project management"
 ```
 
