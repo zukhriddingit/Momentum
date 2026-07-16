@@ -7,6 +7,11 @@ export const DEMO = {
   password: "momentum-demo",
 } as const;
 
+export const DEMO_COMPLETION_ACHIEVEMENT_CODES = [
+  "momentum_three",
+  "ahead_of_schedule",
+] as const;
+
 const NEW_YORK_TIMEZONE = "America/New_York";
 
 function dateParts(instant: Date): {
@@ -35,4 +40,8 @@ export function demoWorkdayInstant(now = new Date()): Date {
   }
 
   return cursor;
+}
+
+export function demoNudgeDueAt(scanAt = demoWorkdayInstant()): Date {
+  return new Date(scanAt.getTime() + 12 * 60 * 60 * 1000);
 }

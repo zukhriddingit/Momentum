@@ -58,6 +58,37 @@ describe("profile recovery", () => {
     expect(profileCount.count).toBe(1);
   });
 
+  it("initializes default motivation preferences for a fresh auth user", async () => {
+    const userId = selfServiceUuid(3);
+
+    await insertAuthUser({
+      id: userId,
+      email: "preference-defaults@momentum.local",
+      displayName: "Preference Defaults",
+      timezone: "America/New_York",
+    });
+
+    const preferenceRows = await database()<
+      Array<{
+        deadline_nudges_enabled: boolean;
+        celebration_animation_enabled: boolean;
+        achievement_visibility_enabled: boolean;
+      }>
+    >`
+      select deadline_nudges_enabled,
+             celebration_animation_enabled,
+             achievement_visibility_enabled
+      from public.motivation_preferences
+      where user_id = ${userId}
+    `;
+
+    expect(preferenceRows[0]).toEqual({
+      deadline_nudges_enabled: true,
+      celebration_animation_enabled: true,
+      achievement_visibility_enabled: true,
+    });
+  });
+
   it("does not overwrite an existing profile with conflicting details", async () => {
     const userId = selfServiceUuid(2);
 

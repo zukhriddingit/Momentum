@@ -30,6 +30,7 @@ export function TaskCard({
 }) {
   return (
     <Card
+      id={`task-${task.id}`}
       className={
         task.isFocusTask
           ? "border-violet-400 ring-2 ring-violet-100 transition-shadow motion-reduce:transition-none"

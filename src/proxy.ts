@@ -3,8 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSupabaseSession } from "@/lib/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
-  const { response, user } = await updateSupabaseSession(request);
   const pathname = request.nextUrl.pathname;
+  if (pathname === "/api/jobs/deadline-nudges") {
+    return NextResponse.next();
+  }
+
+  const { response, user } = await updateSupabaseSession(request);
   const isAuthPage = pathname === "/sign-in" || pathname === "/sign-up";
   const isPublic = pathname === "/" || isAuthPage;
 

@@ -29,13 +29,20 @@ test("seeded user completes today's Focus Task and sees persisted momentum", asy
   await expect(
     celebration.getByRole("heading", { name: "52 points earned" }),
   ).toBeVisible();
+  await expect(celebration.getByText("Prepare launch brief")).toBeVisible();
+  await expect(celebration).toHaveAttribute(
+    "data-message-event",
+    "achievement_unlocked",
+  );
   await expect(celebration.getByText("2 → 3")).toBeVisible();
-  await expect(
-    celebration.getByText("Achievement unlocked: Momentum Three"),
-  ).toBeVisible();
+  await expect(celebration.getByText("Momentum Three")).toBeVisible();
+  await expect(celebration.getByText("Ahead of Schedule")).toBeVisible();
+  await expect(celebration.getByText("40", { exact: true })).toBeVisible();
+  await expect(celebration.getByText("+8", { exact: true })).toBeVisible();
+  await expect(celebration.getByText("+4", { exact: true })).toBeVisible();
   await expect(
     celebration.getByText(
-      "Nice work — you followed through on today’s focus and built real momentum.",
+      /Nice work — your progress earned a new milestone\.|You reached an achievement through work you completed\./,
     ),
   ).toBeVisible();
 
@@ -46,17 +53,33 @@ test("seeded user completes today's Focus Task and sees persisted momentum", asy
 
   await expect(page.getByTestId("total-points")).toHaveText("93");
   await expect(page.getByTestId("current-streak")).toHaveText("3");
-  await expect(page.getByText("Momentum Three")).toBeVisible();
+  const achievements = page.getByTestId("dashboard-achievements");
+  await expect(achievements.getByTestId("achievement-card")).toHaveCount(5);
+  await expect(achievements.getByText("Momentum Three")).toBeVisible();
+  await expect(achievements.getByText("Ahead of Schedule")).toBeVisible();
+  await expect(achievements.getByText("Five-Day Flow")).toBeVisible();
+  await expect(
+    achievements.getByText(/Ready when this fits your work/),
+  ).toHaveCount(1);
+  await expect(page.getByTestId("unread-notification-count")).toHaveText("1");
+  const activity = page.getByTestId("point-activity");
+  await expect(activity.getByText("Prepare launch brief")).toBeVisible();
+  await expect(activity.getByText("52 points")).toBeVisible();
+  await expect(activity.getByText("Base 40")).toBeVisible();
+  await expect(activity.getByText("Early +8")).toBeVisible();
+  await expect(activity.getByText("Streak +4")).toBeVisible();
   await expect(page.getByText("3 of 4 tasks complete")).toBeVisible();
   await expect(page.getByText("75%", { exact: true })).toBeVisible();
   await expect(
     page.getByText(
-      "Nice work — you followed through on today’s focus and built real momentum.",
+      /Nice work — your progress earned a new milestone\.|You reached an achievement through work you completed\./,
     ),
   ).toBeVisible();
 
   await page.reload();
   await expect(page.getByTestId("total-points")).toHaveText("93");
   await expect(page.getByTestId("current-streak")).toHaveText("3");
-  await expect(page.getByText("Momentum Three")).toBeVisible();
+  await expect(
+    page.getByTestId("dashboard-achievements").getByText("Momentum Three"),
+  ).toBeVisible();
 });

@@ -267,6 +267,9 @@ begin
     pre_completion_streak,
     post_completion_streak,
     final_points,
+    task_title,
+    message_event,
+    message_tone,
     message_template_key,
     message_title,
     message_body
@@ -287,6 +290,9 @@ begin
       0,
       1,
       20,
+      'Outline launch goals',
+      'focus_task_completed',
+      'friendly',
       'seed-history-v1',
       'Focus task complete',
       'A focused step moved the project forward.'
@@ -306,9 +312,35 @@ begin
       1,
       2,
       21,
+      'Collect customer quotes',
+      'focus_task_completed',
+      'friendly',
       'seed-history-v1',
       'Focus task complete',
       'A focused step moved the project forward.'
+    );
+
+  insert into public.achievement_grants (
+    id,
+    user_id,
+    achievement_code,
+    completion_id,
+    granted_at
+  )
+  values
+    (
+      '80000000-0000-4000-8000-000000000001',
+      demo_user_id,
+      'first_step',
+      first_completion_id,
+      first_completed_at
+    ),
+    (
+      '80000000-0000-4000-8000-000000000002',
+      demo_user_id,
+      'focused_finish',
+      first_completion_id,
+      first_completed_at
     );
 
   insert into public.point_ledger (

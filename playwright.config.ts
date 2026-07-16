@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 import { demoWorkdayInstant } from "./tests/fixtures/demo";
+import { PLAYWRIGHT_JOB_SECRET } from "./tests/fixtures/self-service";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -30,6 +31,7 @@ export default defineConfig({
     env: {
       ...process.env,
       MOMENTUM_ALLOW_TEST_CLOCK: "true",
+      MOMENTUM_JOB_SECRET: PLAYWRIGHT_JOB_SECRET,
     },
   },
 });

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const COMPLETION_MESSAGE =
-  "Nice work — you followed through on today’s focus and built real momentum.";
+  /Nice work — your progress earned a new milestone\.|You reached an achievement through work you completed\./;
 
 test("new user builds and persists their first focused win", async ({
   page,
@@ -62,6 +62,8 @@ test("new user builds and persists their first focused win", async ({
   await expect(
     inProgressColumn.getByRole("heading", { name: taskName }),
   ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await inProgressColumn.getByRole("button", { name: "Complete task" }).click();
 
   const celebration = page.getByTestId("completion-celebration");
@@ -70,8 +72,22 @@ test("new user builds and persists their first focused win", async ({
     celebration.getByRole("heading", { name: "40 points earned" }),
   ).toBeVisible();
   await expect(celebration.getByText("0 → 1")).toBeVisible();
+  await expect(celebration).toHaveAttribute(
+    "data-message-event",
+    "achievement_unlocked",
+  );
+  await expect(celebration.getByText("First Step")).toBeVisible();
+  await expect(celebration.getByText("Focused Finish")).toBeVisible();
   await expect(celebration.getByText(COMPLETION_MESSAGE)).toBeVisible();
   await expect(celebration.getByText("100%", { exact: true })).toBeVisible();
+  await expect(
+    celebration.getByRole("button", { name: "Keep the momentum going" }),
+  ).toBeEnabled();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 
   await page.reload();
   await expect(page.getByTestId("completion-celebration")).toBeVisible();
@@ -92,6 +108,17 @@ test("new user builds and persists their first focused win", async ({
   ).toBeVisible();
   await expect(page.getByTestId("total-points")).toHaveText("40");
   await expect(page.getByTestId("current-streak")).toHaveText("1");
+  const achievements = page.getByTestId("dashboard-achievements");
+  await expect(achievements.getByTestId("achievement-card")).toHaveCount(5);
+  await expect(achievements.getByText("First Step")).toBeVisible();
+  await expect(achievements.getByText("Focused Finish")).toBeVisible();
+  await expect(
+    achievements.getByText(/Ready when this fits your work/),
+  ).toHaveCount(3);
+  await expect(page.getByTestId("unread-notification-count")).toHaveText("1");
+  await expect(
+    page.getByTestId("point-activity").getByText(taskName),
+  ).toBeVisible();
   await expect(page.getByText("1 of 1 tasks complete")).toBeVisible();
   await expect(page.getByText("100%", { exact: true })).toBeVisible();
   await expect(
@@ -100,9 +127,16 @@ test("new user builds and persists their first focused win", async ({
     ),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Focus task complete" }),
+    page.getByRole("heading", {
+      name: /Achievement unlocked|New milestone/,
+    }),
   ).toBeVisible();
   await expect(page.getByText(COMPLETION_MESSAGE)).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 
   await page.reload();
   await expect(page.getByTestId("completion-celebration")).toHaveCount(0);
@@ -110,7 +144,9 @@ test("new user builds and persists their first focused win", async ({
   await expect(page.getByTestId("current-streak")).toHaveText("1");
   await expect(page.getByText("1 of 1 tasks complete")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Focus task complete" }),
+    page.getByRole("heading", {
+      name: /Achievement unlocked|New milestone/,
+    }),
   ).toBeVisible();
   await expect(page.getByText(COMPLETION_MESSAGE)).toBeVisible();
 });

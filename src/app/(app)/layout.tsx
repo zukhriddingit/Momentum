@@ -3,9 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SignOutButton } from "@/features/auth/sign-out-button";
+import { NotificationBell } from "@/features/notifications/notification-bell";
 import { WorkspaceSwitcher } from "@/features/workspaces/workspace-switcher";
 import { requireUser } from "@/server/auth/require-user";
 import { AppError } from "@/server/errors";
+import { getNotificationSummary } from "@/server/notifications/get-notification-summary";
 import { listWorkspaceNavigation } from "@/server/workspaces/list-workspace-navigation";
 
 export default async function AppLayout({
@@ -22,7 +24,10 @@ export default async function AppLayout({
     }
     throw error;
   }
-  const navigation = await listWorkspaceNavigation({ actorId: user.id });
+  const [navigation, notificationSummary] = await Promise.all([
+    listWorkspaceNavigation({ actorId: user.id }),
+    getNotificationSummary({ actorId: user.id }),
+  ]);
 
   return (
     <div className="min-h-screen">
@@ -50,6 +55,13 @@ export default async function AppLayout({
             >
               Dashboard
             </Link>
+            <Link
+              href="/settings"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none"
+            >
+              Settings
+            </Link>
+            <NotificationBell summary={notificationSummary} />
             <SignOutButton />
           </nav>
         </div>

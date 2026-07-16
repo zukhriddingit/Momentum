@@ -1,4 +1,4 @@
-import { database } from "@/server/db/client";
+export const PLAYWRIGHT_JOB_SECRET = "momentum-playwright-job-secret";
 
 interface AuthUserFixtureInput {
   id: string;
@@ -23,7 +23,10 @@ export async function insertAuthUser({
   timezone,
   password = "momentum-pass-2026",
 }: AuthUserFixtureInput): Promise<void> {
-  await database()`
+  const { database } = await import("@/server/db/client");
+  const sql = database();
+
+  await sql`
     insert into auth.users (
       instance_id,
       id,
@@ -50,7 +53,7 @@ export async function insertAuthUser({
       extensions.crypt(${password}, extensions.gen_salt('bf')),
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      ${database().json({ display_name: displayName, timezone })},
+      ${sql.json({ display_name: displayName, timezone })},
       now(),
       now(),
       '',
