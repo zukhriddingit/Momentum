@@ -576,6 +576,7 @@ git commit -m "feat: add workspace project management"
 - Modify: `src/domain/rewards/calculate-point-breakdown.ts`
 - Modify: `src/domain/rewards/calculate-point-breakdown.test.ts`
 - Modify: `src/server/types.ts`
+- Modify: `vitest.config.ts` (documented test-discovery correction)
 
 **Interfaces:**
 
@@ -626,6 +627,10 @@ Add cases for admin, creator-member, assignee-only member, unrelated member, and
 pnpm exec vitest run src/domain/rewards/calculate-point-breakdown.test.ts src/domain/tasks/task-permissions.test.ts src/features/tasks/schemas.test.ts
 ```
 
+The baseline Vitest include pattern excludes `src/features` tests. Add
+`src/features/**/*.test.ts` to `test.include` in `vitest.config.ts`, then rerun
+the focused command so the task schema suite is discovered normally.
+
 - [ ] **Step 3: Export the existing base mapping without changing calculation**
 
 ```ts
@@ -672,7 +677,7 @@ pnpm typecheck
 - [ ] **Step 7: Commit task boundaries**
 
 ```bash
-git add src/components/ui/select.tsx src/components/ui/textarea.tsx src/domain/tasks src/domain/rewards src/features/tasks/schemas.ts src/features/tasks/schemas.test.ts src/server/types.ts
+git add vitest.config.ts src/components/ui/select.tsx src/components/ui/textarea.tsx src/domain/tasks src/domain/rewards src/features/tasks/schemas.ts src/features/tasks/schemas.test.ts src/server/types.ts
 git commit -m "feat: define task management boundaries"
 ```
 

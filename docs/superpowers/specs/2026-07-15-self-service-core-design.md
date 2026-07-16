@@ -348,6 +348,12 @@ Vitest covers:
 - the base-point preview mapping;
 - all existing reward and streak tests unchanged.
 
+Implementation discovery: the Slice 1 Vitest configuration included only
+`src/domain/**/*.test.ts`. Slice 2 therefore also updates `vitest.config.ts` to
+include `src/features/**/*.test.ts`, ensuring the approved feature-schema
+tests run under the documented `pnpm test:unit` command. This is the only file
+added to the approved manifest after design review.
+
 ### Database tests
 
 pgTAP verifies:
@@ -464,6 +470,7 @@ remains unchanged.
 ### Modify
 
 - `README.md`
+- `vitest.config.ts`
 - `docs/superpowers/specs/2026-07-15-momentum-mvp-design.md`
 - `docs/superpowers/plans/2026-07-15-momentum-mvp.md`
 - `supabase/config.toml`
