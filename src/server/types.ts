@@ -44,7 +44,7 @@ export interface WorkspaceOverview {
 
 export interface TaskView {
   id: string;
-  createdBy?: string;
+  createdBy: string;
   title: string;
   description: string | null;
   assigneeId: string;
@@ -52,8 +52,8 @@ export interface TaskView {
   status: TaskStatus;
   effort: EffortLevel;
   dueAt: string | null;
-  estimatedBasePoints?: number;
-  permissions?: TaskPermissions;
+  estimatedBasePoints: number;
+  permissions: TaskPermissions;
   isCurrentUsersTask: boolean;
   isFocusTask: boolean;
 }
@@ -65,8 +65,8 @@ export interface ProjectBoardView {
   name: string;
   description: string | null;
   workDate: string;
-  actorRole?: MembershipRole;
-  members?: Array<{
+  actorRole: MembershipRole;
+  members: Array<{
     id: string;
     displayName: string;
   }>;
@@ -97,6 +97,8 @@ export interface CompletionReceipt {
 
 export interface TaskMutationReceipt {
   taskId: string;
+  projectId: string;
+  workspaceId: string;
   status: TaskStatus;
   completion: CompletionReceipt | null;
 }

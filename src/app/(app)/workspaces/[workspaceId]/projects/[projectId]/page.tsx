@@ -51,7 +51,7 @@ export default async function ProjectPage({
     notFound();
   }
   const canManageProject =
-    workspace.actorRole === "owner" || workspace.actorRole === "admin";
+    board.actorRole === "owner" || board.actorRole === "admin";
   const celebrationId = z.uuid().safeParse(query.celebration);
   const celebration = celebrationId.success
     ? await getCompletionCelebration({
@@ -98,7 +98,7 @@ export default async function ProjectPage({
           ) : null}
         </div>
       </div>
-      <KanbanBoard board={board} />
+      <KanbanBoard actorId={user.id} board={board} />
       {celebration ? <CelebrationDialog celebration={celebration} /> : null}
     </main>
   );
