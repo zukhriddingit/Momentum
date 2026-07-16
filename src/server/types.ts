@@ -1,9 +1,14 @@
 import type { EffortLevel, PointBreakdown } from "@/domain/rewards/types";
+import type {
+  MembershipRole,
+  TaskPermissions,
+} from "@/domain/tasks/task-permissions";
 
 export type TaskStatus = "todo" | "in_progress" | "done";
 
 export interface TaskView {
   id: string;
+  createdBy?: string;
   title: string;
   description: string | null;
   assigneeId: string;
@@ -11,6 +16,8 @@ export interface TaskView {
   status: TaskStatus;
   effort: EffortLevel;
   dueAt: string | null;
+  estimatedBasePoints?: number;
+  permissions?: TaskPermissions;
   isCurrentUsersTask: boolean;
   isFocusTask: boolean;
 }
@@ -22,6 +29,11 @@ export interface ProjectBoardView {
   name: string;
   description: string | null;
   workDate: string;
+  actorRole?: MembershipRole;
+  members?: Array<{
+    id: string;
+    displayName: string;
+  }>;
   tasks: TaskView[];
 }
 

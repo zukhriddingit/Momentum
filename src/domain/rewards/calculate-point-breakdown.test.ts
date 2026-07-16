@@ -1,10 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { calculatePointBreakdown } from "@/domain/rewards/calculate-point-breakdown";
+import {
+  basePointsForEffort,
+  calculatePointBreakdown,
+} from "@/domain/rewards/calculate-point-breakdown";
 
 const completedAt = new Date("2026-07-15T16:00:00.000Z");
 
 describe("calculatePointBreakdown", () => {
+  it.each([
+    ["small", 20],
+    ["medium", 40],
+    ["large", 70],
+    ["extra_large", 100],
+  ] as const)("previews %s effort as %i base points", (effort, expected) => {
+    expect(basePointsForEffort(effort)).toBe(expected);
+  });
+
   it.each([
     ["small", 20],
     ["medium", 40],
