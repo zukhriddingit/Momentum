@@ -60,6 +60,12 @@ export async function ensureProfile(
     on conflict (id) do nothing
   `;
 
+  await sql`
+    insert into public.motivation_preferences (user_id)
+    values (${input.actorId})
+    on conflict (user_id) do nothing
+  `;
+
   const [profile] = await sql<Array<ProfileRow>>`
     select id, display_name, timezone, motivation_tone::text as motivation_tone
     from public.profiles
