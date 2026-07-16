@@ -22,6 +22,26 @@ export interface WorkspaceNavigationView {
   >;
 }
 
+export interface ProjectSummary {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string | null;
+}
+
+export interface WorkspaceOverview {
+  id: string;
+  name: string;
+  actorRole: MembershipRole;
+  projects: Array<
+    ProjectSummary & {
+      doneTasks: number;
+      totalTasks: number;
+      percentComplete: number;
+    }
+  >;
+}
+
 export interface TaskView {
   id: string;
   createdBy?: string;

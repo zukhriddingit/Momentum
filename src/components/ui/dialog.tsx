@@ -28,7 +28,7 @@ export function DialogContent({
         {children}
         <DialogPrimitive.Close className="absolute top-4 right-4 rounded-full p-2 text-slate-500 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none">
           <X className="size-4" aria-hidden="true" />
-          <span className="sr-only">Close celebration</span>
+          <span className="sr-only">Close dialog</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>

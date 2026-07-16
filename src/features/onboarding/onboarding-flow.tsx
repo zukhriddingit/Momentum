@@ -2,16 +2,23 @@
 
 import { useCallback, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProjectFormDialog } from "@/features/projects/project-form-dialog";
 import { WorkspaceForm } from "@/features/workspaces/workspace-form";
-import type { WorkspaceNavigationView, WorkspaceSummary } from "@/server/types";
+import type {
+  ProjectSummary,
+  WorkspaceNavigationView,
+  WorkspaceSummary,
+} from "@/server/types";
 
 export function OnboardingFlow({
   navigation,
 }: {
   navigation: WorkspaceNavigationView;
 }) {
+  const router = useRouter();
   const resumableWorkspace = navigation.workspaces.find(
     (workspace) => workspace.projects.length === 0,
   );
@@ -21,6 +28,13 @@ export function OnboardingFlow({
   const handleCreated = useCallback((created: WorkspaceSummary) => {
     setWorkspace(created);
   }, []);
+  const handleProjectSaved = useCallback(
+    (project: ProjectSummary) => {
+      router.push(`/workspaces/${project.workspaceId}/projects/${project.id}`);
+      router.refresh();
+    },
+    [router],
+  );
 
   if (workspace) {
     return (
@@ -46,6 +60,11 @@ export function OnboardingFlow({
           >
             Your workspace is saved. Project setup is the next step.
           </p>
+          <ProjectFormDialog
+            workspaceId={workspace.id}
+            triggerLabel="Create your first project"
+            onSaved={handleProjectSaved}
+          />
         </CardContent>
       </Card>
     );
