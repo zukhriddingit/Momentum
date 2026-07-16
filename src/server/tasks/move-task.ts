@@ -20,12 +20,29 @@ export async function moveTask(input: {
 }): Promise<TaskMutationReceipt> {
   if (input.status === "done") {
     const completion = await completeTask(input);
-    return { taskId: input.taskId, status: "done", completion };
+    return {
+      taskId: completion.taskId,
+      workspaceId: completion.workspaceId,
+      projectId: completion.projectId,
+      status: "done",
+      completion,
+    };
   }
 
   return database().begin(async (sql) => {
-    const rows = await sql<Array<{ id: string; status: TaskStatus }>>`
-      select task.id, task.status
+    const rows = await sql<
+      Array<{
+        id: string;
+        status: TaskStatus;
+        project_id: string;
+        workspace_id: string;
+      }>
+    >`
+      select
+        task.id,
+        task.status,
+        project.id as project_id,
+        project.workspace_id
       from public.tasks as task
       join public.projects as project on project.id = task.project_id
       join public.workspace_memberships as membership
@@ -37,11 +54,17 @@ export async function moveTask(input: {
     `;
     const task = rows[0];
     if (!task) {
-      throw new AppError("FORBIDDEN", "Only the assignee can move this task.");
+      throw new AppError("NOT_FOUND", "Task not found.");
     }
 
     if (task.status === input.status) {
-      return { taskId: task.id, status: input.status, completion: null };
+      return {
+        taskId: task.id,
+        workspaceId: task.workspace_id,
+        projectId: task.project_id,
+        status: input.status,
+        completion: null,
+      };
     }
 
     if (!ALLOWED_TRANSITIONS[task.status].includes(input.status)) {
@@ -56,6 +79,12 @@ export async function moveTask(input: {
       set status = ${input.status}, updated_at = ${input.occurredAt}
       where id = ${task.id}
     `;
-    return { taskId: task.id, status: input.status, completion: null };
+    return {
+      taskId: task.id,
+      workspaceId: task.workspace_id,
+      projectId: task.project_id,
+      status: input.status,
+      completion: null,
+    };
   });
 }
