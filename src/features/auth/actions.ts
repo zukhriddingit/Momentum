@@ -3,15 +3,13 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import type { ActionResult } from "@/features/action-result";
+import { actionFailure, type ActionResult } from "@/features/action-result";
+import { signInSchema, signUpSchema } from "@/features/auth/schemas";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const signInSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8),
-});
+import { ensureProfile } from "@/server/profiles/ensure-profile";
 
 export type SignInState = ActionResult<null> | null;
+export type SignUpState = ActionResult<null> | null;
 
 export async function signInAction(
   _previousState: SignInState,
@@ -25,7 +23,7 @@ export async function signInAction(
     return {
       ok: false,
       code: "VALIDATION",
-      message: "Check the demo email and password, then try again.",
+      message: "Check your email and password, then try again.",
       fieldErrors: z.flattenError(parsed.error).fieldErrors,
     };
   }
@@ -36,11 +34,64 @@ export async function signInAction(
     return {
       ok: false,
       code: "UNAUTHORIZED",
-      message: "Those sign-in details did not match the seeded demo user.",
+      message: "Those sign-in details did not match. Check them and try again.",
     };
   }
 
   redirect("/dashboard");
+}
+
+export async function signUpAction(
+  _previousState: SignUpState,
+  formData: FormData,
+): Promise<SignUpState> {
+  const parsed = signUpSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    displayName: formData.get("displayName"),
+    timezone: formData.get("timezone"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: "VALIDATION",
+      message: "Check the highlighted details, then try again.",
+      fieldErrors: z.flattenError(parsed.error).fieldErrors,
+    };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    options: {
+      data: {
+        display_name: parsed.data.displayName,
+        timezone: parsed.data.timezone,
+      },
+    },
+  });
+
+  if (error || !data.user) {
+    return {
+      ok: false,
+      code: "UNAUTHORIZED",
+      message:
+        "We could not create that account. Check your details or try another email.",
+    };
+  }
+
+  try {
+    await ensureProfile({
+      actorId: data.user.id,
+      displayName: parsed.data.displayName,
+      timezone: parsed.data.timezone,
+    });
+  } catch (error) {
+    return actionFailure(error);
+  }
+
+  redirect("/onboarding");
 }
 
 export async function signOutAction(): Promise<void> {

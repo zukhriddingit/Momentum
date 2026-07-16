@@ -2,9 +2,9 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SignInForm } from "@/features/auth/sign-in-form";
+import { SignUpForm } from "@/features/auth/sign-up-form";
 
-export default function SignInPage() {
+export default function SignUpPage() {
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
       <div className="w-full max-w-md space-y-6">
@@ -16,31 +16,30 @@ export default function SignInPage() {
             Momentum
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
-            Make today count
+            Start with one clear focus
           </h1>
           <p className="mt-2 text-slate-600">
-            One clear focus, visible progress, and encouragement that meets you
-            where you are.
+            Create your profile, then shape a workspace around the work that
+            matters today.
           </p>
         </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Open the demo workspace</CardTitle>
+            <CardTitle>Create your account</CardTitle>
           </CardHeader>
           <CardContent>
-            <SignInForm />
+            <SignUpForm />
           </CardContent>
         </Card>
-        <p className="text-center text-xs text-slate-500">
-          Seeded locally: demo@momentum.local / momentum-demo
-        </p>
+
         <p className="text-center text-sm text-slate-600">
-          New to Momentum?{" "}
+          Already have an account?{" "}
           <Link
-            href="/sign-up"
+            href="/sign-in"
             className="font-semibold text-violet-700 underline-offset-4 hover:underline"
           >
-            Create an account
+            Sign in
           </Link>
         </p>
       </div>
