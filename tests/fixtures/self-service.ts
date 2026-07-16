@@ -1,5 +1,7 @@
 import { database } from "@/server/db/client";
 
+export const PLAYWRIGHT_JOB_SECRET = "momentum-playwright-job-secret";
+
 interface AuthUserFixtureInput {
   id: string;
   email: string;
