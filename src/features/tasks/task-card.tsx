@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarClock, CircleCheck, Flame, UserRound } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TaskStatus, TaskView } from "@/server/types";
 
 const EFFORT_LABEL = {
-  small: "Small · 20 pts",
-  medium: "Medium · 40 pts",
-  large: "Large · 70 pts",
-  extra_large: "Extra Large · 100 pts",
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+  extra_large: "Extra Large",
 } as const;
 
 export function TaskCard({
@@ -19,18 +20,20 @@ export function TaskCard({
   pending,
   onFocus,
   onMove,
+  editControl,
 }: {
   task: TaskView;
   pending: boolean;
   onFocus: (taskId: string) => void;
   onMove: (taskId: string, status: TaskStatus) => void;
+  editControl?: ReactNode;
 }) {
   return (
     <Card
       className={
         task.isFocusTask
-          ? "border-violet-400 ring-2 ring-violet-100"
-          : undefined
+          ? "border-violet-400 ring-2 ring-violet-100 transition-shadow motion-reduce:transition-none"
+          : "transition-shadow motion-reduce:transition-none"
       }
       data-testid={`task-${task.id}`}
     >
@@ -64,14 +67,18 @@ export function TaskCard({
               )}
             </p>
           ) : null}
+          <p>Estimated base reward: {task.estimatedBasePoints} points</p>
         </div>
 
-        {task.isCurrentUsersTask ? (
+        {task.isCurrentUsersTask || editControl ? (
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-            {task.status === "todo" && !task.isFocusTask ? (
+            {task.isCurrentUsersTask &&
+            task.status === "todo" &&
+            !task.isFocusTask ? (
               <Button
                 size="sm"
                 variant="secondary"
+                className="motion-reduce:transition-none"
                 onClick={() => onFocus(task.id)}
                 disabled={pending}
               >
@@ -79,20 +86,22 @@ export function TaskCard({
                 Choose as Focus
               </Button>
             ) : null}
-            {task.status === "todo" ? (
+            {task.isCurrentUsersTask && task.status === "todo" ? (
               <Button
                 size="sm"
+                className="motion-reduce:transition-none"
                 onClick={() => onMove(task.id, "in_progress")}
                 disabled={pending}
               >
                 Start task
               </Button>
             ) : null}
-            {task.status === "in_progress" ? (
+            {task.isCurrentUsersTask && task.status === "in_progress" ? (
               <>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="motion-reduce:transition-none"
                   onClick={() => onMove(task.id, "todo")}
                   disabled={pending}
                 >
@@ -100,6 +109,7 @@ export function TaskCard({
                 </Button>
                 <Button
                   size="sm"
+                  className="motion-reduce:transition-none"
                   onClick={() => onMove(task.id, "done")}
                   disabled={pending}
                 >
@@ -108,16 +118,18 @@ export function TaskCard({
                 </Button>
               </>
             ) : null}
-            {task.status === "done" ? (
+            {task.isCurrentUsersTask && task.status === "done" ? (
               <Button
                 size="sm"
                 variant="outline"
+                className="motion-reduce:transition-none"
                 onClick={() => onMove(task.id, "in_progress")}
                 disabled={pending}
               >
                 Reopen task
               </Button>
             ) : null}
+            {editControl}
           </div>
         ) : null}
       </CardContent>

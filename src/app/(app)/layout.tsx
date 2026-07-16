@@ -3,27 +3,31 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SignOutButton } from "@/features/auth/sign-out-button";
+import { WorkspaceSwitcher } from "@/features/workspaces/workspace-switcher";
 import { requireUser } from "@/server/auth/require-user";
 import { AppError } from "@/server/errors";
+import { listWorkspaceNavigation } from "@/server/workspaces/list-workspace-navigation";
 
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let user;
   try {
-    await requireUser();
+    user = await requireUser();
   } catch (error) {
     if (error instanceof AppError && error.code === "UNAUTHORIZED") {
       redirect("/sign-in");
     }
     throw error;
   }
+  const navigation = await listWorkspaceNavigation({ actorId: user.id });
 
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-200/80 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:flex-nowrap">
           <Link
             href="/dashboard"
             className="flex items-center gap-2 rounded-lg font-bold focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none"
@@ -33,8 +37,11 @@ export default async function AppLayout({
             </span>
             Momentum
           </Link>
+          <div className="order-3 w-full lg:order-none lg:mx-4 lg:w-auto lg:flex-1">
+            <WorkspaceSwitcher navigation={navigation} />
+          </div>
           <nav
-            className="flex items-center gap-2"
+            className="ml-auto flex items-center gap-2"
             aria-label="Primary navigation"
           >
             <Link

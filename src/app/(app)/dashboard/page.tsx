@@ -1,4 +1,5 @@
 import { DashboardCards } from "@/features/dashboard/dashboard-cards";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/server/auth/require-user";
 import { requestNow } from "@/server/clock";
 import { getDashboard } from "@/server/dashboard/get-dashboard";
@@ -6,6 +7,10 @@ import { getDashboard } from "@/server/dashboard/get-dashboard";
 export default async function DashboardPage() {
   const [user, occurredAt] = await Promise.all([requireUser(), requestNow()]);
   const dashboard = await getDashboard({ actorId: user.id, occurredAt });
+
+  if (!dashboard.hasWorkspace) {
+    redirect("/onboarding");
+  }
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">

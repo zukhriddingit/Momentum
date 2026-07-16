@@ -68,31 +68,45 @@ export function DashboardCards({ dashboard }: { dashboard: DashboardView }) {
           <h2 id="project-progress-heading" className="text-xl font-bold">
             Project progress
           </h2>
-          {dashboard.projects.map((project) => (
-            <Link
-              key={project.id}
-              href={`/workspaces/${project.workspaceId}/projects/${project.id}`}
-              className="block rounded-2xl focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none"
-            >
-              <Card className="transition-colors hover:border-violet-300">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <CardTitle>{project.name}</CardTitle>
-                    <Badge>{project.percentComplete}%</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Progress
-                    value={project.percentComplete}
-                    label={`${project.name} progress`}
-                  />
-                  <p className="text-sm text-slate-500">
-                    {project.doneTasks} of {project.totalTasks} tasks complete
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          {dashboard.projects.length > 0 ? (
+            dashboard.projects.map((project) => (
+              <Link
+                key={project.id}
+                href={`/workspaces/${project.workspaceId}/projects/${project.id}`}
+                className="block rounded-2xl focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:outline-none"
+              >
+                <Card className="transition-colors hover:border-violet-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <CardTitle>{project.name}</CardTitle>
+                      <Badge>{project.percentComplete}%</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Progress
+                      value={project.percentComplete}
+                      label={`${project.name} progress`}
+                    />
+                    <p className="text-sm text-slate-500">
+                      {project.doneTasks} of {project.totalTasks} tasks complete
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))
+          ) : (
+            <Card>
+              <CardContent className="pt-5">
+                <p className="font-semibold">
+                  Your first project is ready to take shape.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Open a workspace from the navigation above to create a project
+                  and make progress visible.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </section>
 
         <section className="space-y-3" aria-labelledby="notification-heading">

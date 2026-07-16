@@ -42,7 +42,7 @@ test("seeded user completes today's Focus Task and sees persisted momentum", asy
   await page.reload();
   await expect(page.getByTestId("completion-celebration")).toBeVisible();
   await page.getByRole("button", { name: "Keep the momentum going" }).click();
-  await page.getByRole("main").getByRole("link", { name: "Dashboard" }).click();
+  await page.getByRole("link", { name: "Dashboard" }).click();
 
   await expect(page.getByTestId("total-points")).toHaveText("93");
   await expect(page.getByTestId("current-streak")).toHaveText("3");

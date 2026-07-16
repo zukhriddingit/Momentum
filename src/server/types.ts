@@ -1,9 +1,50 @@
 import type { EffortLevel, PointBreakdown } from "@/domain/rewards/types";
+import type {
+  MembershipRole,
+  TaskPermissions,
+} from "@/domain/tasks/task-permissions";
+
+export type { MembershipRole } from "@/domain/tasks/task-permissions";
 
 export type TaskStatus = "todo" | "in_progress" | "done";
 
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  role: MembershipRole;
+}
+
+export interface WorkspaceNavigationView {
+  workspaces: Array<
+    WorkspaceSummary & {
+      projects: Array<{ id: string; name: string }>;
+    }
+  >;
+}
+
+export interface ProjectSummary {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string | null;
+}
+
+export interface WorkspaceOverview {
+  id: string;
+  name: string;
+  actorRole: MembershipRole;
+  projects: Array<
+    ProjectSummary & {
+      doneTasks: number;
+      totalTasks: number;
+      percentComplete: number;
+    }
+  >;
+}
+
 export interface TaskView {
   id: string;
+  createdBy: string;
   title: string;
   description: string | null;
   assigneeId: string;
@@ -11,6 +52,8 @@ export interface TaskView {
   status: TaskStatus;
   effort: EffortLevel;
   dueAt: string | null;
+  estimatedBasePoints: number;
+  permissions: TaskPermissions;
   isCurrentUsersTask: boolean;
   isFocusTask: boolean;
 }
@@ -22,6 +65,11 @@ export interface ProjectBoardView {
   name: string;
   description: string | null;
   workDate: string;
+  actorRole: MembershipRole;
+  members: Array<{
+    id: string;
+    displayName: string;
+  }>;
   tasks: TaskView[];
 }
 
@@ -49,6 +97,8 @@ export interface CompletionReceipt {
 
 export interface TaskMutationReceipt {
   taskId: string;
+  projectId: string;
+  workspaceId: string;
   status: TaskStatus;
   completion: CompletionReceipt | null;
 }
@@ -62,6 +112,7 @@ export interface FocusSelectionView {
 export type CompletionCelebrationView = CompletionReceipt;
 
 export interface DashboardView {
+  hasWorkspace: boolean;
   user: {
     displayName: string;
   };

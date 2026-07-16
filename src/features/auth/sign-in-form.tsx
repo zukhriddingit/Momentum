@@ -38,6 +38,7 @@ export function SignInForm() {
         <p
           className="rounded-xl bg-rose-50 p-3 text-sm text-rose-800"
           role="alert"
+          aria-live="polite"
         >
           {state.message}
         </p>

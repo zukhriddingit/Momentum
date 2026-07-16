@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,15 @@ export default function SignInPage() {
         </Card>
         <p className="text-center text-xs text-slate-500">
           Seeded locally: demo@momentum.local / momentum-demo
+        </p>
+        <p className="text-center text-sm text-slate-600">
+          New to Momentum?{" "}
+          <Link
+            href="/sign-up"
+            className="font-semibold text-violet-700 underline-offset-4 hover:underline"
+          >
+            Create an account
+          </Link>
         </p>
       </div>
     </main>

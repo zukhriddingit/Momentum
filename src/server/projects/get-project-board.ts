@@ -1,10 +1,16 @@
 import "server-only";
 
+import { basePointsForEffort } from "@/domain/rewards/calculate-point-breakdown";
+import type { EffortLevel } from "@/domain/rewards/types";
 import { toWorkDate } from "@/domain/streaks/work-date";
+import { getTaskPermissions } from "@/domain/tasks/task-permissions";
 import { database } from "@/server/db/client";
 import { AppError } from "@/server/errors";
-import type { ProjectBoardView, TaskStatus } from "@/server/types";
-import type { EffortLevel } from "@/domain/rewards/types";
+import type {
+  MembershipRole,
+  ProjectBoardView,
+  TaskStatus,
+} from "@/server/types";
 
 interface ProjectRow {
   id: string;
@@ -13,10 +19,12 @@ interface ProjectRow {
   name: string;
   description: string | null;
   timezone: string;
+  actor_role: MembershipRole;
 }
 
 interface TaskRow {
   id: string;
+  created_by: string;
   title: string;
   description: string | null;
   assignee_id: string;
@@ -24,6 +32,12 @@ interface TaskRow {
   status: TaskStatus;
   effort: EffortLevel;
   due_at: Date | null;
+  first_completed_at: Date | null;
+}
+
+interface MemberRow {
+  id: string;
+  display_name: string;
 }
 
 export async function getProjectBoard(input: {
@@ -39,7 +53,8 @@ export async function getProjectBoard(input: {
       workspace.name as workspace_name,
       project.name,
       project.description,
-      profile.timezone
+      profile.timezone,
+      membership.role::text as actor_role
     from public.projects as project
     join public.workspaces as workspace on workspace.id = project.workspace_id
     join public.workspace_memberships as membership
@@ -54,18 +69,24 @@ export async function getProjectBoard(input: {
   }
 
   const workDate = toWorkDate(input.occurredAt, project.timezone);
-  const [tasks, focusRows] = await Promise.all([
+  const [tasks, focusRows, members] = await Promise.all([
     sql<TaskRow[]>`
       select
         task.id,
+        task.created_by,
         task.title,
         task.description,
         task.assignee_id,
         assignee.display_name as assignee_name,
         task.status,
         task.effort,
-        task.due_at
+        task.due_at,
+        task.first_completed_at
       from public.tasks as task
+      join public.projects as task_project on task_project.id = task.project_id
+      join public.workspace_memberships as actor
+        on actor.workspace_id = task_project.workspace_id
+       and actor.user_id = ${input.actorId}
       join public.profiles as assignee on assignee.id = task.assignee_id
       where task.project_id = ${input.projectId}
       order by task.created_at, task.id
@@ -75,6 +96,16 @@ export async function getProjectBoard(input: {
       from public.focus_selections
       where user_id = ${input.actorId}
         and work_date = ${workDate}
+    `,
+    sql<MemberRow[]>`
+      select profile.id, profile.display_name
+      from public.workspace_memberships as member
+      join public.profiles as profile on profile.id = member.user_id
+      join public.workspace_memberships as actor
+        on actor.workspace_id = member.workspace_id
+       and actor.user_id = ${input.actorId}
+      where member.workspace_id = ${project.workspace_id}
+      order by profile.display_name, profile.id
     `,
   ]);
   const focusTaskId = focusRows[0]?.task_id ?? null;
@@ -86,8 +117,14 @@ export async function getProjectBoard(input: {
     name: project.name,
     description: project.description,
     workDate,
+    actorRole: project.actor_role,
+    members: members.map((member) => ({
+      id: member.id,
+      displayName: member.display_name,
+    })),
     tasks: tasks.map((task) => ({
       id: task.id,
+      createdBy: task.created_by,
       title: task.title,
       description: task.description,
       assigneeId: task.assignee_id,
@@ -95,6 +132,14 @@ export async function getProjectBoard(input: {
       status: task.status,
       effort: task.effort,
       dueAt: task.due_at?.toISOString() ?? null,
+      estimatedBasePoints: basePointsForEffort(task.effort),
+      permissions: getTaskPermissions({
+        actorId: input.actorId,
+        role: project.actor_role,
+        createdBy: task.created_by,
+        assigneeId: task.assignee_id,
+        firstCompletedAt: task.first_completed_at,
+      }),
       isCurrentUsersTask: task.assignee_id === input.actorId,
       isFocusTask: task.id === focusTaskId,
     })),

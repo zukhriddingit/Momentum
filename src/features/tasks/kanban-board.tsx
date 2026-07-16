@@ -6,7 +6,12 @@ import { startTransition, useState } from "react";
 import { selectFocusTaskAction } from "@/features/focus/actions";
 import { moveTaskAction } from "@/features/tasks/actions";
 import { TaskCard } from "@/features/tasks/task-card";
-import type { ProjectBoardView, TaskStatus } from "@/server/types";
+import { TaskFormDialog } from "@/features/tasks/task-form-dialog";
+import type {
+  ProjectBoardView,
+  TaskMutationReceipt,
+  TaskStatus,
+} from "@/server/types";
 
 const COLUMNS: Array<{ status: TaskStatus; title: string; accent: string }> = [
   { status: "todo", title: "To Do", accent: "bg-slate-400" },
@@ -14,7 +19,13 @@ const COLUMNS: Array<{ status: TaskStatus; title: string; accent: string }> = [
   { status: "done", title: "Done", accent: "bg-emerald-500" },
 ];
 
-export function KanbanBoard({ board }: { board: ProjectBoardView }) {
+export function KanbanBoard({
+  actorId,
+  board,
+}: {
+  actorId: string;
+  board: ProjectBoardView;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [pending, setPending] = useState(false);
@@ -51,8 +62,6 @@ export function KanbanBoard({ board }: { board: ProjectBoardView }) {
     run(async () => {
       const result = await moveTaskAction({
         taskId,
-        projectId: board.id,
-        workspaceId: board.workspaceId,
         status,
       });
       if (!result.ok) {
@@ -72,11 +81,48 @@ export function KanbanBoard({ board }: { board: ProjectBoardView }) {
     });
   }
 
+  function handleTaskMutation(
+    receipt: TaskMutationReceipt,
+    successMessage: string,
+  ): void {
+    const completion = receipt.completion;
+    if (completion?.wasNewCompletion) {
+      setStatusMessage(`${completion.points.finalPoints} points earned.`);
+      router.push(`${pathname}?celebration=${completion.completionId}`);
+      return;
+    }
+
+    setStatusMessage(successMessage);
+    router.refresh();
+  }
+
   return (
     <>
       <p className="sr-only" aria-live="polite">
         {statusMessage}
       </p>
+      <div className="mb-5 flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-semibold text-slate-900">Project tasks</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Keep each next step clear, assigned, and easy to act on.
+          </p>
+        </div>
+        <TaskFormDialog
+          mode="create"
+          actorId={actorId}
+          projectId={board.id}
+          members={board.members}
+          onSaved={(receipt) =>
+            handleTaskMutation(receipt, "Task created and ready to move.")
+          }
+        />
+      </div>
+      {board.tasks.length === 0 ? (
+        <p className="mb-5 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-6 text-violet-900">
+          Create one clear task to give this project its first bit of momentum.
+        </p>
+      ) : null}
       <div
         className="grid gap-5 lg:grid-cols-3"
         aria-label="Project task board"
@@ -111,6 +157,20 @@ export function KanbanBoard({ board }: { board: ProjectBoardView }) {
                     pending={pending}
                     onFocus={selectFocus}
                     onMove={move}
+                    editControl={
+                      task.permissions.canEdit ? (
+                        <TaskFormDialog
+                          mode="edit"
+                          actorId={actorId}
+                          projectId={board.id}
+                          members={board.members}
+                          task={task}
+                          onSaved={(receipt) =>
+                            handleTaskMutation(receipt, "Task changes saved.")
+                          }
+                        />
+                      ) : null
+                    }
                   />
                 ))}
                 {tasks.length === 0 ? (

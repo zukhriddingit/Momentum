@@ -5,7 +5,8 @@ import { updateSupabaseSession } from "@/lib/supabase/proxy";
 export async function proxy(request: NextRequest) {
   const { response, user } = await updateSupabaseSession(request);
   const pathname = request.nextUrl.pathname;
-  const isPublic = pathname === "/" || pathname === "/sign-in";
+  const isAuthPage = pathname === "/sign-in" || pathname === "/sign-up";
+  const isPublic = pathname === "/" || isAuthPage;
 
   if (!user && !isPublic) {
     const destination = request.nextUrl.clone();
@@ -14,7 +15,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(destination);
   }
 
-  if (user && pathname === "/sign-in") {
+  if (user && isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

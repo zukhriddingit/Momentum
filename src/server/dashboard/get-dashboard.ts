@@ -42,6 +42,7 @@ export async function getDashboard(input: {
     achievementRows,
     projectRows,
     notificationRows,
+    membershipRows,
   ] = await Promise.all([
     sql<Array<{ exists: boolean }>>`
         select exists (
@@ -115,6 +116,13 @@ export async function getDashboard(input: {
         order by created_at desc
         limit 1
       `,
+    sql<Array<{ exists: boolean }>>`
+        select exists (
+          select 1
+          from public.workspace_memberships as membership
+          where membership.user_id = ${input.actorId}
+        ) as exists
+      `,
   ]);
   const effectiveCurrentStreak = breakRows[0]?.exists
     ? 0
@@ -124,6 +132,7 @@ export async function getDashboard(input: {
   const notification = notificationRows[0];
 
   return {
+    hasWorkspace: membershipRows[0]?.exists ?? false,
     user: { displayName: profile.display_name },
     focusTask: focus
       ? {

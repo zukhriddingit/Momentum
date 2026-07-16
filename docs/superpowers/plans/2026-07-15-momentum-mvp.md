@@ -332,7 +332,10 @@ Execute Slices 1 through 4 in order. This is the first releasable milestone and 
 
 ### Milestone 2: create real work
 
-Execute Slices 5 and 6. After Slice 4 has stabilized contracts, Slice 7 domain work and Slice 8 adapter-contract work may begin in parallel because their owned paths do not overlap.
+Slices 5 and 6 are implemented on `agent/slice-2-self-service-core`. A new user
+can sign up, create a workspace/project/task, assign and move the task, complete
+it through the authoritative engine, and reload the persisted result. Slice 7
+domain work and Slice 8 adapter-contract work remain unauthorized.
 
 ### Milestone 3: notification channels and nudges
 
@@ -346,7 +349,9 @@ Execute Slices 10 and 11 in parallel with separate file ownership. Slice 12 inte
 
 ### Risks
 
-- The workspace is not a Git repository. Slice 1 requires explicit Git initialization before the plan's commit checkpoints can be used.
+- Slice 1 is frozen at tag `momentum-slice-1` in the private
+  `zukhriddingit/Momentum` repository. Slice 2 work uses a dedicated branch and
+  keeps the baseline tag unchanged.
 - The workspace has no framework or local database setup. Docker and network access for package/browser downloads are prerequisites.
 - The transaction adapter requires a Node runtime and a correct Supabase pooled `DATABASE_URL`.
 - Hosted job scheduling is deployment-specific; this plan provides protected routes but does not select a host.
@@ -409,9 +414,11 @@ The following tasks are execution checklists. Each task must be reviewed and com
 
 ### Active execution scope
 
-Only Slices 1 through 4—the first seeded end-to-end milestone—are authorized in
-the current implementation run. Slices 5 through 12 remain planning context and
-must not be implemented until separately authorized. The active slice excludes
+Slices 1 through 4—the first seeded end-to-end milestone—are complete at tag
+`momentum-slice-1`. Slices 5 and 6 are implemented as the bounded Self-Service
+Core Project Management slice specified in
+`../specs/2026-07-15-self-service-core-design.md`. Slices 7 through 12 remain
+planning context and are not authorized. The completed Slice 2 still excludes
 Resend, email, SMS, quiet hours, deadline nudges, delivery workers, full settings,
 additional achievements beyond Momentum Three, and production deployment.
 

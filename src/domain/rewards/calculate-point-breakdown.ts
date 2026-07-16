@@ -13,6 +13,10 @@ const BASE_POINTS: Readonly<Record<EffortLevel, number>> = {
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
+export function basePointsForEffort(effort: EffortLevel): number {
+  return BASE_POINTS[effort];
+}
+
 function timingMultiplier(
   completedAt: Date,
   dueAt: Date | null,
@@ -48,7 +52,7 @@ export function calculatePointBreakdown(input: {
     );
   }
 
-  const basePoints = BASE_POINTS[input.effort];
+  const basePoints = basePointsForEffort(input.effort);
   const timing = timingMultiplier(input.completedAt, input.dueAt);
   const streakMultiplier = 1 + Math.min(0.2, 0.04 * input.preCompletionStreak);
   const timingAdjusted = basePoints * timing;
