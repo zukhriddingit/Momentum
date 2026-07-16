@@ -4,7 +4,23 @@ import type {
   TaskPermissions,
 } from "@/domain/tasks/task-permissions";
 
+export type { MembershipRole } from "@/domain/tasks/task-permissions";
+
 export type TaskStatus = "todo" | "in_progress" | "done";
+
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  role: MembershipRole;
+}
+
+export interface WorkspaceNavigationView {
+  workspaces: Array<
+    WorkspaceSummary & {
+      projects: Array<{ id: string; name: string }>;
+    }
+  >;
+}
 
 export interface TaskView {
   id: string;
@@ -74,6 +90,7 @@ export interface FocusSelectionView {
 export type CompletionCelebrationView = CompletionReceipt;
 
 export interface DashboardView {
+  hasWorkspace: boolean;
   user: {
     displayName: string;
   };
