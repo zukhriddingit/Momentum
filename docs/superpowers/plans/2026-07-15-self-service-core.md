@@ -911,13 +911,20 @@ git commit -m "test: harden self-service authorization"
 **Files:**
 
 - Create: `tests/e2e/new-user-self-service.spec.ts`
-- Regression-only: `tests/e2e/momentum-happy-path.spec.ts`
+- Modify: `tests/e2e/momentum-happy-path.spec.ts` (documented shared-navigation locator correction)
 - Reference-only: `playwright.config.ts` (retain the existing serial one-worker configuration unchanged)
 
 **Interfaces:**
 
 - Consumes: immediate local signup, onboarding forms, project/task dialogs, Focus/move controls, persisted celebration/dashboard, and the deterministic test clock.
 - Produces: one clean-user end-to-end test while retaining the seeded 52-point test.
+
+Implementation discovery: the first combined browser run proved the seeded
+reward flow still reached the correct persisted board state, but its legacy
+Dashboard locator timed out because Slice 2 moved that link from `<main>` into
+the shared application navigation. Update that one locator to the accessible
+shared Dashboard link. Do not change any seeded reward, streak, achievement,
+message, progress, or persistence expectation.
 
 - [ ] **Step 1: Write the browser test**
 
@@ -967,7 +974,7 @@ Expected each run: 2 tests pass; seeded path shows 52/streak 3; new user shows 4
 - [ ] **Step 5: Commit the browser flow**
 
 ```bash
-git add tests/e2e/new-user-self-service.spec.ts
+git add tests/e2e/new-user-self-service.spec.ts tests/e2e/momentum-happy-path.spec.ts
 git commit -m "test: add new-user Momentum flow"
 ```
 

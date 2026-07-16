@@ -296,8 +296,8 @@ existing sign-in path continues to work.
 Implementation discovery: the Slice 1 dialog close control was labeled
 `Close celebration`. Because Slice 2 reuses the primitive for project and task
 forms, `src/components/ui/dialog.tsx` now uses the accurate generic label
-`Close dialog`. This is the second and final shared-foundation file added to
-the approved manifest after design review.
+`Close dialog`. This is a shared-foundation file added to the approved manifest
+after design review.
 
 Task deadline controls submit an ISO timestamp derived from the visible local
 date-time. The server validates it before creating a `Date`. The user's profile
@@ -357,8 +357,15 @@ Vitest covers:
 Implementation discovery: the Slice 1 Vitest configuration included only
 `src/domain/**/*.test.ts`. Slice 2 therefore also updates `vitest.config.ts` to
 include `src/features/**/*.test.ts`, ensuring the approved feature-schema
-tests run under the documented `pnpm test:unit` command. This is the only file
-added to the approved manifest after design review.
+tests run under the documented `pnpm test:unit` command.
+
+Release-gate discovery: Slice 2 moved the primary Dashboard link from project
+page content into the shared application navigation. The preserved seeded
+Playwright test still scoped that link to `<main>`, so it timed out even though
+the accessible navigation link was present and both reward paths were correct.
+`tests/e2e/momentum-happy-path.spec.ts` is therefore updated only to use the
+shared accessible Dashboard link. Its seeded 52-point, streak, achievement,
+message, persistence, and progress expectations remain unchanged.
 
 ### Database tests
 
@@ -500,6 +507,7 @@ remains unchanged.
 - `src/server/tasks/complete-task.ts`
 - `src/server/tasks/move-task.ts`
 - `src/server/types.ts`
+- `tests/e2e/momentum-happy-path.spec.ts`
 
 Changes outside this manifest require an explicit documented deviation.
 
