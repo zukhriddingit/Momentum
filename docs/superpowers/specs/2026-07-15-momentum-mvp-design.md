@@ -3,7 +3,8 @@
 **Date:** 2026-07-15
 
 **Status:** Approved design; Slice 1 implemented at tag `momentum-slice-1` and
-Slice 2 approved in `2026-07-15-self-service-core-design.md`
+Slices 5–6 implemented as Slice 2 Self-Service Core on
+`agent/slice-2-self-service-core`
 
 ## Product intent
 
@@ -681,6 +682,13 @@ The primary Chromium test signs in as the seeded user, opens the project,
 selects the Focus Task, moves it to In Progress and Done, verifies the 52-point
 celebration and three-day streak, opens the dashboard, reloads, and confirms the
 progress, ledger, message, achievement, and notification remain persisted.
+
+Slice 2 adds a separate clean-user Chromium flow that signs up, completes
+onboarding, creates a self-assigned medium task without a deadline, selects and
+completes it as Focus, and verifies the persisted 40-point result, streak one,
+project progress, celebration dismissal, message, and notification. The seeded
+flow remains unchanged except for using the shared application-navigation
+Dashboard link introduced by Slice 2.
 
 Authentication state is generated during Playwright setup and ignored by Git.
 The test uses keyboard-operable task controls and checks the primary responsive

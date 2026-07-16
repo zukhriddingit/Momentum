@@ -1,6 +1,6 @@
 # Momentum
 
-Momentum is a motivation-first project-management application. This repository currently implements only the first approved vertical slice: a seeded user can choose a Focus Task, move it through the board, complete it once, and see persisted rewards and progress.
+Momentum is a motivation-first project-management application. The implemented self-service core lets a new user sign up, create a workspace and project, create and assign tasks, choose a Focus Task, move it across a three-column board, complete it once, and see persisted rewards and progress. The deterministic seeded Slice 1 path remains a permanent regression flow.
 
 ## Local setup
 
@@ -17,11 +17,17 @@ Open `http://localhost:3000` and sign in with:
 - Email: `demo@momentum.local`
 - Password: `momentum-demo`
 
+Alternatively, open `/sign-up` and create a local account with a display name, email, password of at least 12 characters, and valid IANA timezone such as `America/New_York`. Local email signup is enabled, email confirmation is disabled, and the new account receives an immediate session. The onboarding flow then creates an owner workspace and first project.
+
 The first start intentionally launches only the Supabase services needed by this slice (PostgreSQL, Auth, PostgREST, and the API gateway). Reset the deterministic demo data with `pnpm supabase:reset`, and stop the local stack with `pnpm supabase:stop`.
 
-## Seeded result
+Database resets apply both migrations in order. The first creates the Slice 1 collaboration and reward model. The second adds atomic Auth-profile initialization, workspace-assignee validation, completed-assignee protection, indexes, and browser-role guardrails. The conflict-safe seed then restores the demo workspace.
+
+## Completion results
 
 The demo user starts with a two-workday Focus Streak and 41 historical points. Completing the medium Focus Task at least 24 hours early yields 52 points: 40 base, 8 early-completion bonus, and 4 streak bonus. The persisted result is 93 total points, a streak of three, the Momentum Three achievement, 75% project progress, one supportive notification, and a reload-safe celebration receipt.
+
+A new user who completes a self-assigned medium Focus Task without a deadline earns 40 points: 40 base with no timing or prior-streak bonus. The persisted result is 40 total points, a streak progression from zero to one, 100% progress for a one-task project, one supportive notification, and a reload-safe celebration receipt. Reopening and recompleting returns the original receipt and does not create another reward.
 
 Streak behavior follows the approved amendment: a weekday without a selected Focus Task pauses the streak, a weekday with a selected but incomplete Focus Task breaks it, and weekends neither increment nor break it.
 
@@ -41,7 +47,13 @@ pnpm test:e2e
 pnpm build
 ```
 
-The integration and end-to-end commands reset the local database before running. Do not point them at shared or production data.
+The CI-equivalent release gate is:
+
+```bash
+pnpm validate
+```
+
+The integration and end-to-end commands reset the local database before running. Do not point them at shared or production data. Playwright covers both the seeded 52-point path and the clean-user 40-point path.
 
 ## Dependency rationale
 
@@ -54,4 +66,4 @@ The integration and end-to-end commands reset the local database before running.
 
 ## Deliberately deferred
 
-This slice does not include Resend or email delivery, SMS adapters, quiet-hour scheduling, deadline-nudge jobs, notification-delivery workers, the full settings UI, achievements beyond Momentum Three, production deployment configuration, or the remaining full-MVP flows. See the approved design and implementation plan under `docs/superpowers/` for those later slices.
+This slice does not include Resend or email delivery, SMS adapters, quiet-hour scheduling, deadline-nudge jobs, notification-delivery workers, the full settings UI, achievements beyond Momentum Three, invitations, membership removal or role-management UI, or production deployment configuration. See the approved design and implementation plan under `docs/superpowers/` for those later slices.
