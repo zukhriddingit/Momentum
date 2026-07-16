@@ -1,0 +1,58 @@
+{
+  "name": "momentum",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "dev:local": "node scripts/with-local-supabase.mjs next dev",
+    "supabase:start": "supabase start -x studio,storage-api,imgproxy,postgres-meta,edge-runtime,logflare,vector,realtime,mailpit",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset --local",
+    "build": "next build",
+    "start": "next start",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:db": "supabase test db --local",
+    "test:integration": "supabase db reset --local && node scripts/with-local-supabase.mjs vitest run --config vitest.integration.config.ts",
+    "test:e2e": "supabase db reset --local && node scripts/with-local-supabase.mjs playwright test",
+    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:db && pnpm test:integration && pnpm test:e2e && pnpm build"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "1.1.19",
+    "@supabase/ssr": "0.12.3",
+    "@supabase/supabase-js": "2.110.6",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "1.24.0",
+    "next": "16.2.10",
+    "postgres": "3.4.9",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "server-only": "0.0.1",
+    "tailwind-merge": "3.6.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@tailwindcss/postcss": "4.3.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.2.10",
+    "prettier": "3.9.5",
+    "prettier-plugin-tailwindcss": "0.8.1",
+    "supabase": "2.109.1",
+    "tailwindcss": "4.3.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}
