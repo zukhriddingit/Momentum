@@ -67,7 +67,7 @@ begin
       extensions.crypt('momentum-demo', extensions.gen_salt('bf')),
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"display_name":"Maya Chen"}'::jsonb,
+      '{"display_name":"Maya Chen","timezone":"America/New_York"}'::jsonb,
       now(),
       now(),
       '',
@@ -84,7 +84,7 @@ begin
       extensions.crypt('momentum-demo', extensions.gen_salt('bf')),
       now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"display_name":"Alex Rivera"}'::jsonb,
+      '{"display_name":"Alex Rivera","timezone":"America/New_York"}'::jsonb,
       now(),
       now(),
       '',
@@ -136,7 +136,8 @@ begin
   insert into public.profiles (id, display_name, timezone, motivation_tone)
   values
     (demo_user_id, 'Maya Chen', 'America/New_York', 'friendly'),
-    (teammate_user_id, 'Alex Rivera', 'America/New_York', 'friendly');
+    (teammate_user_id, 'Alex Rivera', 'America/New_York', 'friendly')
+  on conflict (id) do nothing;
 
   insert into public.workspaces (id, name, created_by)
   values (workspace_id, 'Momentum Demo Team', demo_user_id);
