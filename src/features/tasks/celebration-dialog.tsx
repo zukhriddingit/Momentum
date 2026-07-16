@@ -71,12 +71,15 @@ export function CelebrationDialog({
               {celebration.postCompletionStreak}
             </p>
           </div>
-          {celebration.achievement ? (
-            <p className="flex items-center gap-2 text-sm font-medium text-violet-900">
+          {celebration.achievements.map((achievement) => (
+            <p
+              className="flex items-center gap-2 text-sm font-medium text-violet-900"
+              key={achievement.code}
+            >
               <Award className="size-5" aria-hidden="true" />
-              Achievement unlocked: {celebration.achievement}
+              Achievement unlocked: {achievement.name}
             </p>
-          ) : null}
+          ))}
         </div>
 
         <div className="mt-5 space-y-2">

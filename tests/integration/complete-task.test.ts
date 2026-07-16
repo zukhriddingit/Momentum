@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { selectFocusTask } from "@/server/focus/select-focus-task";
 import { closeDatabase, database } from "@/server/db/client";
 import { completeTask } from "@/server/tasks/complete-task";
+import { getCompletionCelebration } from "@/server/tasks/get-completion-celebration";
 import { moveTask } from "@/server/tasks/move-task";
 import { DEMO, demoWorkdayInstant } from "../fixtures/demo";
 
@@ -49,6 +50,7 @@ describe("first completion transaction", () => {
     }
 
     expect(fresh).toMatchObject({
+      taskTitle: "Prepare launch brief",
       points: {
         basePoints: 40,
         timingBonus: 8,
@@ -57,13 +59,41 @@ describe("first completion transaction", () => {
       },
       preCompletionStreak: 2,
       postCompletionStreak: 3,
-      achievement: "Momentum Three",
+      streakIncremented: true,
+      achievements: [
+        { code: "momentum_three", name: "Momentum Three" },
+        { code: "ahead_of_schedule", name: "Ahead of Schedule" },
+      ],
+      message: {
+        event: "achievement_unlocked",
+        tone: "friendly",
+      },
       projectProgress: { doneTasks: 3, totalTasks: 4, percentComplete: 75 },
     });
     expect(replay).toMatchObject({
       completionId: fresh.completionId,
       wasNewCompletion: false,
       points: { finalPoints: 52 },
+    });
+
+    const originalMessage = fresh.message;
+    await database()`
+      update public.profiles
+      set motivation_tone = 'minimal'
+      where id = ${DEMO.userId}
+    `;
+    const persistedCelebration = await getCompletionCelebration({
+      actorId: DEMO.userId,
+      completionId: fresh.completionId,
+    });
+    expect(persistedCelebration).toMatchObject({
+      taskTitle: "Prepare launch brief",
+      points: { finalPoints: 52 },
+      achievements: [
+        { code: "momentum_three", name: "Momentum Three" },
+        { code: "ahead_of_schedule", name: "Ahead of Schedule" },
+      ],
+      message: originalMessage,
     });
 
     const sql = database();
@@ -93,7 +123,7 @@ describe("first completion transaction", () => {
       completion_count: 1,
       ledger_count: 3,
       ledger_points: 52,
-      achievement_count: 1,
+      achievement_count: 2,
       notification_count: 1,
       current_count: 3,
       longest_count: 3,
@@ -141,7 +171,7 @@ describe("first completion transaction", () => {
       completion_count: 1,
       ledger_count: 3,
       ledger_points: 52,
-      achievement_count: 1,
+      achievement_count: 2,
       notification_count: 1,
       task_status: "done",
     });

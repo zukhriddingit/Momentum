@@ -1,3 +1,8 @@
+import type { AchievementCode } from "@/domain/achievements/achievements";
+import type {
+  MotivationEvent,
+  MotivationTone,
+} from "@/domain/motivation/types";
 import type { EffortLevel, PointBreakdown } from "@/domain/rewards/types";
 import type {
   MembershipRole,
@@ -73,6 +78,14 @@ export interface ProjectBoardView {
   tasks: TaskView[];
 }
 
+export interface AchievementView {
+  code: AchievementCode;
+  name: string;
+  description: string;
+  icon: string;
+  grantedAt: string;
+}
+
 export interface CompletionReceipt {
   completionId: string;
   taskId: string;
@@ -83,8 +96,14 @@ export interface CompletionReceipt {
   points: PointBreakdown;
   preCompletionStreak: number;
   postCompletionStreak: number;
-  achievement: "Momentum Three" | null;
+  streakIncremented: boolean;
+  achievements: AchievementView[];
+  achievementVisibilityEnabled: boolean;
+  celebrationAnimationEnabled: boolean;
   message: {
+    event: MotivationEvent;
+    tone: MotivationTone;
+    key: string;
     title: string;
     body: string;
   };
