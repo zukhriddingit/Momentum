@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-16
 
-**Status:** Approved in design review; awaiting written-spec review
+**Status:** Approved in design review and written-spec review
 
 **Baseline:** Commit `7292f2d` on `agent/slice-2-self-service-core`, published as
 draft pull request `zukhriddingit/Momentum#1`
@@ -200,13 +200,15 @@ messages without creating another notification category.
 
 Add to `task_completions`:
 
+- `task_title text not null`
 - `message_event motivation_event_type not null`
 - `message_tone motivation_tone not null`
 
 Existing `message_template_key`, `message_title`, and `message_body` remain the
-authoritative rendered snapshot. Existing seeded rows are backfilled as
-Friendly Focus completions. The existing immutable trigger protects all new
-snapshot fields automatically.
+authoritative rendered snapshot. `task_title` preserves the completed title even
+if the task is edited later. Existing seeded rows are backfilled from their task
+and as Friendly Focus completions. The existing immutable trigger protects all
+new snapshot fields automatically.
 
 ### Motivation preferences
 
@@ -247,6 +249,10 @@ Replace the existing broad uniqueness constraint with two explicit identities:
   `(user_id, event_type, source_id)` when `deadline_at is null`.
 - Deadline events: unique `(user_id, task_id, event_type, deadline_at)` when
   `deadline_at is not null`.
+
+A check constraint requires `deadline_at` and `task_id` for
+`deadline_approaching`/`overdue_recovery` rows and forbids `deadline_at` for all
+other notification events.
 
 Changing a deadline intentionally creates a new nudge identity. The service
 must derive `user_id` from the authoritative assignee rather than accept it from
