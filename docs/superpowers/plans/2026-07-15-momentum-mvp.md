@@ -346,7 +346,9 @@ Execute Slices 10 and 11 in parallel with separate file ownership. Slice 12 inte
 
 ### Risks
 
-- The workspace is not a Git repository. Slice 1 requires explicit Git initialization before the plan's commit checkpoints can be used.
+- Slice 1 is frozen at tag `momentum-slice-1` in the private
+  `zukhriddingit/Momentum` repository. Slice 2 work uses a dedicated branch and
+  keeps the baseline tag unchanged.
 - The workspace has no framework or local database setup. Docker and network access for package/browser downloads are prerequisites.
 - The transaction adapter requires a Node runtime and a correct Supabase pooled `DATABASE_URL`.
 - Hosted job scheduling is deployment-specific; this plan provides protected routes but does not select a host.
@@ -409,9 +411,11 @@ The following tasks are execution checklists. Each task must be reviewed and com
 
 ### Active execution scope
 
-Only Slices 1 through 4—the first seeded end-to-end milestone—are authorized in
-the current implementation run. Slices 5 through 12 remain planning context and
-must not be implemented until separately authorized. The active slice excludes
+Slices 1 through 4—the first seeded end-to-end milestone—are complete at tag
+`momentum-slice-1`. Slices 5 and 6 are now authorized as the bounded
+Self-Service Core Project Management slice and are specified in
+`../specs/2026-07-15-self-service-core-design.md`. Slices 7 through 12 remain
+planning context and are not authorized. The active slice still excludes
 Resend, email, SMS, quiet hours, deadline nudges, delivery workers, full settings,
 additional achievements beyond Momentum Three, and production deployment.
 

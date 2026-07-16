@@ -2,7 +2,8 @@
 
 **Date:** 2026-07-15
 
-**Status:** Approved design; implementation has not started
+**Status:** Approved design; Slice 1 implemented at tag `momentum-slice-1` and
+Slice 2 approved in `2026-07-15-self-service-core-design.md`
 
 ## Product intent
 
