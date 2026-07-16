@@ -40,3 +40,34 @@ a,
 input {
   -webkit-tap-highlight-color: transparent;
 }
+
+@keyframes momentum-celebration-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.65;
+  }
+  50% {
+    transform: translateY(-0.35rem) rotate(8deg);
+    opacity: 1;
+  }
+}
+
+[data-completion-decoration] {
+  pointer-events: none;
+}
+
+[data-animate="enabled"] [data-completion-decoration] {
+  animation: momentum-celebration-float 1.8s ease-in-out infinite;
+}
+
+[data-animate="disabled"] [data-completion-decoration] {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-completion-decoration] {
+    animation: none !important;
+    transform: none !important;
+  }
+}

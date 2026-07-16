@@ -130,10 +130,30 @@ export interface FocusSelectionView {
 
 export type CompletionCelebrationView = CompletionReceipt;
 
+export interface DashboardPointActivity {
+  completionId: string;
+  taskTitle: string;
+  completedAt: string;
+  basePoints: number;
+  timingBonus: number;
+  streakBonus: number;
+  finalPoints: number;
+}
+
+export interface DashboardAchievementState {
+  code: AchievementCode;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  grantedAt: string | null;
+}
+
 export interface DashboardView {
   hasWorkspace: boolean;
   user: {
     displayName: string;
+    timezone: string;
   };
   focusTask: {
     id: string;
@@ -144,10 +164,10 @@ export interface DashboardView {
   totalPoints: number;
   currentStreak: number;
   longestStreak: number;
-  achievement: {
-    name: string;
-    description: string;
-  } | null;
+  pointActivity: DashboardPointActivity[];
+  achievements: DashboardAchievementState[];
+  achievementsVisible: boolean;
+  unreadNotificationCount: number;
   projects: Array<{
     id: string;
     workspaceId: string;
