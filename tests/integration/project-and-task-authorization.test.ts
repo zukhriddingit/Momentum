@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { closeDatabase, database } from "@/server/db/client";
+import { AppError } from "@/server/errors";
 import { createProject } from "@/server/projects/create-project";
 import { updateProject } from "@/server/projects/update-project";
 import { createTask } from "@/server/tasks/create-task";
@@ -9,6 +10,28 @@ import { updateTask } from "@/server/tasks/update-task";
 import { createWorkspace } from "@/server/workspaces/create-workspace";
 import { getWorkspaceOverview } from "@/server/workspaces/get-workspace-overview";
 import { insertAuthUser, selfServiceUuid } from "../fixtures/self-service";
+
+const TASK_NOT_FOUND = {
+  code: "NOT_FOUND",
+  message: "Task not found.",
+} as const;
+
+async function rejectionShape(
+  attempt: () => Promise<unknown>,
+): Promise<{ code: string; message: string }> {
+  let rejection: unknown;
+  try {
+    await attempt();
+  } catch (error) {
+    rejection = error;
+  }
+
+  if (!(rejection instanceof AppError)) {
+    throw new Error("Expected the service to reject with an AppError.");
+  }
+
+  return { code: rejection.code, message: rejection.message };
+}
 
 const ownerId = selfServiceUuid(100);
 const adminId = selfServiceUuid(101);
@@ -191,7 +214,7 @@ describe("project authorization", () => {
       () => getWorkspaceOverview({ actorId: outsiderId, workspaceId }),
       () =>
         getWorkspaceOverview({
-          actorId: ownerId,
+          actorId: outsiderId,
           workspaceId: selfServiceUuid(197),
         }),
     ];
@@ -289,6 +312,8 @@ describe("task authorization and atomic completion delegation", () => {
   let taskWorkspaceId: string;
   let taskOutsiderWorkspaceId: string;
   let taskProjectId: string;
+  let taskOutsiderProjectId: string;
+  let taskOutsiderTaskId: string;
 
   beforeAll(async () => {
     await Promise.all([
@@ -363,6 +388,27 @@ describe("task authorization and atomic completion delegation", () => {
       description: null,
     });
     taskProjectId = project.id;
+
+    const outsiderProject = await createProject({
+      actorId: taskOutsiderId,
+      workspaceId: taskOutsiderWorkspaceId,
+      name: "Foreign Task Project",
+      description: null,
+    });
+    taskOutsiderProjectId = outsiderProject.id;
+
+    const outsiderTask = await createTask({
+      actorId: taskOutsiderId,
+      projectId: taskOutsiderProjectId,
+      title: "Foreign task",
+      description: null,
+      assigneeId: taskOutsiderId,
+      effort: "small",
+      dueAt: null,
+      status: "todo",
+      occurredAt,
+    });
+    taskOutsiderTaskId = outsiderTask.taskId;
   });
 
   afterAll(async () => {
@@ -429,17 +475,17 @@ describe("task authorization and atomic completion delegation", () => {
         taskId: created.taskId,
         title: "Draft the customer update",
         description: "Owner clarified the goal",
-        assigneeId: taskAssigneeId,
+        assigneeId: taskReplacementId,
         effort: "medium",
         dueAt: null,
-        status: "todo",
+        status: "in_progress",
         occurredAt,
       }),
     ).resolves.toMatchObject({
       taskId: created.taskId,
       workspaceId: taskWorkspaceId,
       projectId: taskProjectId,
-      status: "todo",
+      status: "in_progress",
     });
 
     await expect(
@@ -470,14 +516,14 @@ describe("task authorization and atomic completion delegation", () => {
         assigneeId: taskAssigneeId,
         effort: "medium",
         dueAt: null,
-        status: "todo",
+        status: "in_progress",
         occurredAt,
       }),
     ).resolves.toMatchObject({
       taskId: created.taskId,
       workspaceId: taskWorkspaceId,
       projectId: taskProjectId,
-      status: "todo",
+      status: "in_progress",
     });
 
     await expect(
@@ -546,6 +592,86 @@ describe("task authorization and atomic completion delegation", () => {
       code: "NOT_FOUND",
       message: "Task not found.",
     });
+
+    await expect(
+      updateTask({
+        actorId: taskAssigneeId,
+        taskId: created.taskId,
+        title: "Write the customer update",
+        description: "Admin clarified the goal",
+        assigneeId: taskReplacementId,
+        effort: "medium",
+        dueAt: null,
+        status: "todo",
+        occurredAt,
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Task not found.",
+    });
+
+    await expect(
+      updateTask({
+        actorId: taskOtherMemberId,
+        taskId: created.taskId,
+        title: "Write the customer update",
+        description: "Admin clarified the goal",
+        assigneeId: taskAssigneeId,
+        effort: "medium",
+        dueAt: null,
+        status: "in_progress",
+        occurredAt,
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Task not found.",
+    });
+
+    await expect(
+      moveTask({
+        actorId: taskOtherMemberId,
+        taskId: created.taskId,
+        status: "in_progress",
+        occurredAt,
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Task not found.",
+    });
+
+    for (const input of [
+      {
+        title: "Outsider rewrote the title",
+        assigneeId: taskAssigneeId,
+      },
+      {
+        title: "Write the customer update",
+        assigneeId: taskReplacementId,
+      },
+    ]) {
+      await expect(
+        updateTask({
+          actorId: taskOutsiderId,
+          taskId: created.taskId,
+          title: input.title,
+          description: "Admin clarified the goal",
+          assigneeId: input.assigneeId,
+          effort: "medium",
+          dueAt: null,
+          status: "todo",
+          occurredAt,
+        }),
+      ).rejects.toMatchObject(TASK_NOT_FOUND);
+    }
+
+    await expect(
+      moveTask({
+        actorId: taskOutsiderId,
+        taskId: created.taskId,
+        status: "in_progress",
+        occurredAt,
+      }),
+    ).rejects.toMatchObject(TASK_NOT_FOUND);
   });
 
   it("allows reassignment before completion and rejects cross-workspace assignees", async () => {
@@ -618,6 +744,98 @@ describe("task authorization and atomic completion delegation", () => {
     expect(taskOutsiderWorkspaceId).not.toBe(taskWorkspaceId);
   });
 
+  it("makes foreign and missing task resources indistinguishable", async () => {
+    for (const projectId of [taskOutsiderProjectId, selfServiceUuid(207)]) {
+      await expect(
+        createTask({
+          actorId: taskCreatorId,
+          projectId,
+          title: "Inaccessible task create",
+          description: null,
+          assigneeId: taskAssigneeId,
+          effort: "small",
+          dueAt: null,
+          status: "todo",
+          occurredAt,
+        }),
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        message: "Task not found.",
+      });
+    }
+
+    for (const taskId of [taskOutsiderTaskId, selfServiceUuid(208)]) {
+      await expect(
+        updateTask({
+          actorId: taskCreatorId,
+          taskId,
+          title: "Inaccessible task update",
+          description: null,
+          assigneeId: taskAssigneeId,
+          effort: "small",
+          dueAt: null,
+          status: "todo",
+          occurredAt,
+        }),
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        message: "Task not found.",
+      });
+
+      await expect(
+        moveTask({
+          actorId: taskCreatorId,
+          taskId,
+          status: "in_progress",
+          occurredAt,
+        }),
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        message: "Task not found.",
+      });
+    }
+
+    const foreignTaskId = taskOutsiderTaskId;
+    const missingTaskId = selfServiceUuid(209);
+    const updateToDone = (taskId: string) =>
+      updateTask({
+        actorId: taskCreatorId,
+        taskId,
+        title: "Inaccessible completion update",
+        description: null,
+        assigneeId: taskAssigneeId,
+        effort: "small" as const,
+        dueAt: null,
+        status: "done" as const,
+        occurredAt,
+      });
+    const moveToDone = (taskId: string) =>
+      moveTask({
+        actorId: taskCreatorId,
+        taskId,
+        status: "done",
+        occurredAt,
+      });
+
+    const foreignUpdateError = await rejectionShape(() =>
+      updateToDone(foreignTaskId),
+    );
+    const missingUpdateError = await rejectionShape(() =>
+      updateToDone(missingTaskId),
+    );
+    expect(foreignUpdateError).toEqual(TASK_NOT_FOUND);
+    expect(missingUpdateError).toEqual(foreignUpdateError);
+
+    const foreignMoveError = await rejectionShape(() =>
+      moveToDone(foreignTaskId),
+    );
+    const missingMoveError = await rejectionShape(() =>
+      moveToDone(missingTaskId),
+    );
+    expect(foreignMoveError).toEqual(TASK_NOT_FOUND);
+    expect(missingMoveError).toEqual(foreignMoveError);
+  });
+
   it("requires the assignee for Done even when the actor can edit", async () => {
     const created = await createTask({
       actorId: taskCreatorId,
@@ -636,6 +854,7 @@ describe("task authorization and atomic completion delegation", () => {
       taskAdminId,
       taskCreatorId,
       taskOtherMemberId,
+      taskOutsiderId,
     ]) {
       await expect(
         updateTask({
@@ -654,9 +873,92 @@ describe("task authorization and atomic completion delegation", () => {
         message: "Task not found.",
       });
     }
+
+    await expect(
+      updateTask({
+        actorId: taskAssigneeId,
+        taskId: created.taskId,
+        title: "Finish the assigned follow-up",
+        description: null,
+        assigneeId: taskAssigneeId,
+        effort: "small",
+        dueAt: null,
+        status: "done",
+        occurredAt,
+      }),
+    ).resolves.toMatchObject({
+      taskId: created.taskId,
+      status: "done",
+      completion: {
+        wasNewCompletion: true,
+        points: { finalPoints: 20 },
+      },
+    });
   });
 
-  it("delegates edit-to-Done atomically and freezes the completed assignee", async () => {
+  it("lets owners and admins complete tasks assigned to them", async () => {
+    const ownerTask = await createTask({
+      actorId: taskCreatorId,
+      projectId: taskProjectId,
+      title: "Owner-assigned follow-up",
+      description: null,
+      assigneeId: taskOwnerId,
+      effort: "small",
+      dueAt: null,
+      status: "todo",
+      occurredAt,
+    });
+    const adminTask = await createTask({
+      actorId: taskCreatorId,
+      projectId: taskProjectId,
+      title: "Admin-assigned follow-up",
+      description: null,
+      assigneeId: taskAdminId,
+      effort: "small",
+      dueAt: null,
+      status: "todo",
+      occurredAt,
+    });
+
+    await expect(
+      updateTask({
+        actorId: taskOwnerId,
+        taskId: ownerTask.taskId,
+        title: "Owner-assigned follow-up",
+        description: null,
+        assigneeId: taskOwnerId,
+        effort: "small",
+        dueAt: null,
+        status: "done",
+        occurredAt,
+      }),
+    ).resolves.toMatchObject({
+      taskId: ownerTask.taskId,
+      status: "done",
+      completion: {
+        wasNewCompletion: true,
+        points: { finalPoints: 20 },
+      },
+    });
+
+    await expect(
+      moveTask({
+        actorId: taskAdminId,
+        taskId: adminTask.taskId,
+        status: "done",
+        occurredAt,
+      }),
+    ).resolves.toMatchObject({
+      taskId: adminTask.taskId,
+      status: "done",
+      completion: {
+        wasNewCompletion: true,
+        points: { finalPoints: 20 },
+      },
+    });
+  });
+
+  it("reopens and recompletes through edit-to-Done without changing reward artifacts", async () => {
     const created = await createTask({
       actorId: taskAssigneeId,
       projectId: taskProjectId,
@@ -692,21 +994,69 @@ describe("task authorization and atomic completion delegation", () => {
     if (!result.completion) {
       throw new Error("Expected edit-to-Done to return a completion receipt.");
     }
+    const firstCompletion = result.completion;
 
-    const [artifacts] = await database()<
-      Array<{ completions: number; points: number }>
-    >`
-      select
-        (select count(*)::integer
-           from public.task_completions
-          where task_id = ${created.taskId}) as completions,
-        (select coalesce(sum(ledger.points), 0)::integer
-           from public.point_ledger as ledger
-           join public.task_completions as receipt
-             on receipt.id = ledger.completion_id
-          where receipt.task_id = ${created.taskId}) as points
-    `;
-    expect(artifacts).toEqual({ completions: 1, points: 40 });
+    interface CompletionArtifacts {
+      completion_count: number;
+      completion_id: string | null;
+      ledger_count: number;
+      ledger_points: number;
+      notification_count: number;
+      achievement_count: number;
+      streak_row_count: number;
+      current_streak: number | null;
+      longest_streak: number | null;
+    }
+
+    const loadArtifacts = async (): Promise<CompletionArtifacts> => {
+      const [artifacts] = await database()<CompletionArtifacts[]>`
+        select
+          (select count(*)::integer
+             from public.task_completions
+            where task_id = ${created.taskId}) as completion_count,
+          (select id::text
+             from public.task_completions
+            where task_id = ${created.taskId}) as completion_id,
+          (select count(*)::integer
+             from public.point_ledger
+            where completion_id = ${firstCompletion.completionId}) as ledger_count,
+          (select coalesce(sum(points), 0)::integer
+             from public.point_ledger
+            where completion_id = ${firstCompletion.completionId}) as ledger_points,
+          (select count(*)::integer
+             from public.notifications
+            where source_id = ${firstCompletion.completionId}) as notification_count,
+          (select count(*)::integer
+             from public.achievement_grants
+            where completion_id = ${firstCompletion.completionId}) as achievement_count,
+          (select count(*)::integer
+             from public.focus_streaks
+            where user_id = ${taskAssigneeId}) as streak_row_count,
+          (select current_count
+             from public.focus_streaks
+            where user_id = ${taskAssigneeId}) as current_streak,
+          (select longest_count
+             from public.focus_streaks
+            where user_id = ${taskAssigneeId}) as longest_streak
+      `;
+      if (!artifacts) {
+        throw new Error("Expected completion artifact counts.");
+      }
+      return artifacts;
+    };
+
+    const beforeReopen = await loadArtifacts();
+    expect(beforeReopen).toEqual({
+      completion_count: 1,
+      completion_id: firstCompletion.completionId,
+      ledger_count: 1,
+      ledger_points: 40,
+      notification_count: 1,
+      achievement_count: 0,
+      streak_row_count: 1,
+      current_streak: 0,
+      longest_streak: 0,
+    });
 
     const ownerEdit = await updateTask({
       actorId: taskOwnerId,
@@ -730,7 +1080,7 @@ describe("task authorization and atomic completion delegation", () => {
     const adminEdit = await updateTask({
       actorId: taskAdminId,
       taskId: created.taskId,
-      title: "Complete and share a medium task",
+      title: "Complete a medium task",
       description: "Owner added a helpful summary",
       assigneeId: taskAssigneeId,
       effort: "medium",
@@ -746,89 +1096,73 @@ describe("task authorization and atomic completion delegation", () => {
       completion: null,
     });
 
-    const replay = await updateTask({
+    const reopened = await moveTask({
       actorId: taskAssigneeId,
       taskId: created.taskId,
-      title: "Complete and share a medium task",
-      description: "Owner added a helpful summary",
-      assigneeId: taskAssigneeId,
-      effort: "medium",
-      dueAt: null,
-      status: "done",
+      status: "in_progress",
       occurredAt,
     });
-    expect(replay).toMatchObject({
+    expect(reopened).toEqual({
       taskId: created.taskId,
       workspaceId: taskWorkspaceId,
       projectId: taskProjectId,
-      completion: {
-        completionId: result.completion.completionId,
-        wasNewCompletion: false,
-        points: { finalPoints: 40 },
-      },
-    });
-
-    const boardReplay = await moveTask({
-      actorId: taskAssigneeId,
-      taskId: created.taskId,
-      status: "done",
-      occurredAt,
-    });
-    expect(boardReplay).toMatchObject({
-      taskId: created.taskId,
-      workspaceId: taskWorkspaceId,
-      projectId: taskProjectId,
-      completion: {
-        completionId: result.completion.completionId,
-        wasNewCompletion: false,
-        points: { finalPoints: 40 },
-      },
-    });
-
-    const [persistedEdit] = await database()<
-      Array<{
-        completions: number;
-        points: number;
-        title: string;
-        description: string | null;
-      }>
-    >`
-      select
-        (select count(*)::integer
-           from public.task_completions
-          where task_id = ${created.taskId}) as completions,
-        (select coalesce(sum(ledger.points), 0)::integer
-           from public.point_ledger as ledger
-           join public.task_completions as receipt
-             on receipt.id = ledger.completion_id
-          where receipt.task_id = ${created.taskId}) as points,
-        task.title,
-        task.description
-      from public.tasks as task
-      where task.id = ${created.taskId}
-    `;
-    expect(persistedEdit).toEqual({
-      completions: 1,
-      points: 40,
-      title: "Complete and share a medium task",
-      description: "Owner added a helpful summary",
+      status: "in_progress",
+      completion: null,
     });
 
     await expect(
       updateTask({
-        actorId: taskAssigneeId,
+        actorId: taskOwnerId,
         taskId: created.taskId,
-        title: "Complete and share a medium task",
+        title: "Complete a medium task",
         description: "Owner added a helpful summary",
         assigneeId: taskReplacementId,
         effort: "medium",
         dueAt: null,
-        status: "done",
+        status: "in_progress",
         occurredAt,
       }),
     ).rejects.toMatchObject({
       code: "CONFLICT",
       message: "Completed tasks cannot be reassigned.",
+    });
+
+    const recompletion = await moveTask({
+      actorId: taskAssigneeId,
+      taskId: created.taskId,
+      status: "done",
+      occurredAt,
+    });
+    expect(recompletion).toEqual({
+      taskId: created.taskId,
+      workspaceId: taskWorkspaceId,
+      projectId: taskProjectId,
+      status: "done",
+      completion: {
+        ...firstCompletion,
+        wasNewCompletion: false,
+      },
+    });
+
+    await expect(loadArtifacts()).resolves.toEqual(beforeReopen);
+
+    const [persistedTask] = await database()<
+      Array<{
+        title: string;
+        description: string | null;
+        assignee_id: string;
+        status: string;
+      }>
+    >`
+      select title, description, assignee_id, status::text
+      from public.tasks
+      where id = ${created.taskId}
+    `;
+    expect(persistedTask).toEqual({
+      title: "Complete a medium task",
+      description: "Owner added a helpful summary",
+      assignee_id: taskAssigneeId,
+      status: "done",
     });
   });
 

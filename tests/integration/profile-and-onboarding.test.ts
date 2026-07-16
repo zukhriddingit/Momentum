@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { closeDatabase, database } from "@/server/db/client";
 import { getDashboard } from "@/server/dashboard/get-dashboard";
 import { ensureProfile } from "@/server/profiles/ensure-profile";
+import { createProject } from "@/server/projects/create-project";
 import { createWorkspace } from "@/server/workspaces/create-workspace";
 import { listWorkspaceNavigation } from "@/server/workspaces/list-workspace-navigation";
 import { insertAuthUser, selfServiceUuid } from "../fixtures/self-service";
@@ -85,7 +86,7 @@ describe("workspace onboarding", () => {
     await closeDatabase();
   });
 
-  it("atomically creates a workspace and owner membership", async () => {
+  it("recovers onboarding from no workspace through the first project", async () => {
     const userId = selfServiceUuid(10);
 
     await insertAuthUser({
@@ -94,6 +95,10 @@ describe("workspace onboarding", () => {
       displayName: "Workspace Owner",
       timezone: "America/New_York",
     });
+
+    await expect(listWorkspaceNavigation({ actorId: userId })).resolves.toEqual(
+      { workspaces: [] },
+    );
 
     const workspace = await createWorkspace({
       actorId: userId,
@@ -104,6 +109,19 @@ describe("workspace onboarding", () => {
       name: "My Workspace",
       role: "owner",
     });
+
+    await expect(listWorkspaceNavigation({ actorId: userId })).resolves.toEqual(
+      {
+        workspaces: [
+          {
+            id: workspace.id,
+            name: "My Workspace",
+            role: "owner",
+            projects: [],
+          },
+        ],
+      },
+    );
 
     const [membership] = await database()<Array<{ role: string }>>`
       select role::text
@@ -119,18 +137,52 @@ describe("workspace onboarding", () => {
     });
     expect(dashboard.hasWorkspace).toBe(true);
     expect(dashboard.projects).toEqual([]);
+
+    const project = await createProject({
+      actorId: userId,
+      workspaceId: workspace.id,
+      name: "My First Project",
+      description: "The first clear outcome",
+    });
+
+    await expect(listWorkspaceNavigation({ actorId: userId })).resolves.toEqual(
+      {
+        workspaces: [
+          {
+            id: workspace.id,
+            name: "My Workspace",
+            role: "owner",
+            projects: [{ id: project.id, name: "My First Project" }],
+          },
+        ],
+      },
+    );
   });
 
   it("rejects a missing profile without leaving workspace rows", async () => {
     const missingUserId = selfServiceUuid(11);
     const workspaceName = "Must Roll Back";
 
+    await insertAuthUser({
+      id: missingUserId,
+      email: "missing-profile@momentum.local",
+      displayName: "Missing Profile",
+      timezone: "America/New_York",
+    });
+    await database()`
+      delete from public.profiles
+      where id = ${missingUserId}
+    `;
+
     await expect(
       createWorkspace({
         actorId: missingUserId,
         name: workspaceName,
       }),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Profile not found.",
+    });
 
     const [counts] = await database()<
       Array<{ workspace_count: number; membership_count: number }>
