@@ -31,6 +31,7 @@ export default defineConfig({
     env: {
       ...process.env,
       MOMENTUM_ALLOW_TEST_CLOCK: "true",
+      MOMENTUM_ENVIRONMENT: "test",
       MOMENTUM_JOB_SECRET: PLAYWRIGHT_JOB_SECRET,
     },
   },

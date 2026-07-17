@@ -3,8 +3,16 @@ import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignInForm } from "@/features/auth/sign-in-form";
+import {
+  isLocalCredentialHintVisible,
+  readRuntimeEnvironment,
+} from "@/server/environment";
 
 export default function SignInPage() {
+  const showLocalCredentials = isLocalCredentialHintVisible(
+    readRuntimeEnvironment().name,
+  );
+
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
       <div className="w-full max-w-md space-y-6">
@@ -31,9 +39,11 @@ export default function SignInPage() {
             <SignInForm />
           </CardContent>
         </Card>
-        <p className="text-center text-xs text-slate-500">
-          Seeded locally: demo@momentum.local / momentum-demo
-        </p>
+        {showLocalCredentials ? (
+          <p className="text-center text-xs text-slate-500">
+            Seeded locally: demo@momentum.local / momentum-demo
+          </p>
+        ) : null}
         <p className="text-center text-sm text-slate-600">
           New to Momentum?{" "}
           <Link
