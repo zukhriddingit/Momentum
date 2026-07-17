@@ -19,6 +19,7 @@ interface ProjectRow {
   name: string;
   description: string | null;
   timezone: string;
+  celebration_animation_enabled: boolean;
   actor_role: MembershipRole;
 }
 
@@ -54,6 +55,8 @@ export async function getProjectBoard(input: {
       project.name,
       project.description,
       profile.timezone,
+      coalesce(preference.celebration_animation_enabled, true)
+        as celebration_animation_enabled,
       membership.role::text as actor_role
     from public.projects as project
     join public.workspaces as workspace on workspace.id = project.workspace_id
@@ -61,6 +64,8 @@ export async function getProjectBoard(input: {
       on membership.workspace_id = project.workspace_id
       and membership.user_id = ${input.actorId}
     join public.profiles as profile on profile.id = ${input.actorId}
+    left join public.motivation_preferences as preference
+      on preference.user_id = profile.id
     where project.id = ${input.projectId}
   `;
   const project = projectRows[0];
@@ -117,6 +122,7 @@ export async function getProjectBoard(input: {
     name: project.name,
     description: project.description,
     workDate,
+    celebrationAnimationEnabled: project.celebration_animation_enabled,
     actorRole: project.actor_role,
     members: members.map((member) => ({
       id: member.id,

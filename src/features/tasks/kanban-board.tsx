@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { startTransition, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 
 import { selectFocusTaskAction } from "@/features/focus/actions";
 import { moveTaskAction } from "@/features/tasks/actions";
@@ -30,6 +30,28 @@ export function KanbanBoard({
   const pathname = usePathname();
   const [pending, setPending] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [startedTaskId, setStartedTaskId] = useState<string | null>(null);
+  const startPulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (startPulseTimer.current) {
+        clearTimeout(startPulseTimer.current);
+      }
+    },
+    [],
+  );
+
+  function beginStartPulse(taskId: string): void {
+    if (startPulseTimer.current) {
+      clearTimeout(startPulseTimer.current);
+    }
+    setStartedTaskId(taskId);
+    startPulseTimer.current = setTimeout(() => {
+      setStartedTaskId(null);
+      startPulseTimer.current = null;
+    }, 1_000);
+  }
 
   function run(work: () => Promise<void>) {
     setPending(true);
@@ -60,6 +82,11 @@ export function KanbanBoard({
 
   function move(taskId: string, status: TaskStatus) {
     run(async () => {
+      const shouldPulse =
+        status === "in_progress" &&
+        board.tasks.some(
+          (task) => task.id === taskId && task.status === "todo",
+        );
       const result = await moveTaskAction({
         taskId,
         status,
@@ -67,6 +94,10 @@ export function KanbanBoard({
       if (!result.ok) {
         setStatusMessage(result.message);
         return;
+      }
+
+      if (shouldPulse && board.celebrationAnimationEnabled) {
+        beginStartPulse(taskId);
       }
 
       const completion = result.data.completion;
@@ -155,6 +186,7 @@ export function KanbanBoard({
                     key={task.id}
                     task={task}
                     pending={pending}
+                    startPulse={startedTaskId === task.id}
                     onFocus={selectFocus}
                     onMove={move}
                     editControl={

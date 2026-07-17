@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { TaskStatus, TaskView } from "@/server/types";
 
 const EFFORT_LABEL = {
@@ -18,12 +19,14 @@ const EFFORT_LABEL = {
 export function TaskCard({
   task,
   pending,
+  startPulse,
   onFocus,
   onMove,
   editControl,
 }: {
   task: TaskView;
   pending: boolean;
+  startPulse: boolean;
   onFocus: (taskId: string) => void;
   onMove: (taskId: string, status: TaskStatus) => void;
   editControl?: ReactNode;
@@ -31,12 +34,13 @@ export function TaskCard({
   return (
     <Card
       id={`task-${task.id}`}
-      className={
-        task.isFocusTask
-          ? "border-violet-400 ring-2 ring-violet-100 transition-shadow motion-reduce:transition-none"
-          : "transition-shadow motion-reduce:transition-none"
-      }
+      className={cn(
+        "transition-shadow motion-reduce:transition-none",
+        task.isFocusTask && "border-violet-400 ring-2 ring-violet-100",
+        startPulse && "momentum-task-started",
+      )}
       data-testid={`task-${task.id}`}
+      data-start-pulse={startPulse ? "active" : "idle"}
     >
       <CardHeader className="pb-3">
         <div className="mb-2 flex flex-wrap gap-2">

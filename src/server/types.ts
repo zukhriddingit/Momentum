@@ -70,6 +70,7 @@ export interface ProjectBoardView {
   name: string;
   description: string | null;
   workDate: string;
+  celebrationAnimationEnabled: boolean;
   actorRole: MembershipRole;
   members: Array<{
     id: string;

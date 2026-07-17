@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { CompletionCelebrationEffect } from "@/features/tasks/completion-celebration-effect";
 import type { CompletionCelebrationView } from "@/server/types";
 
 const EVENT_BADGE_CLASS = {
@@ -39,8 +40,12 @@ export function CelebrationDialog({
 
   return (
     <Dialog defaultOpen onOpenChange={(open) => !open && dismiss()}>
+      <CompletionCelebrationEffect
+        completionId={celebration.completionId}
+        enabled={celebration.celebrationAnimationEnabled}
+      />
       <DialogContent
-        className="max-h-[calc(100vh-2rem)] overflow-y-auto"
+        className="z-[60] max-h-[calc(100vh-2rem)] overflow-y-auto"
         data-testid="completion-celebration"
         data-message-event={celebration.message.event}
         data-message-tone={celebration.message.tone}
@@ -53,6 +58,7 @@ export function CelebrationDialog({
           data-completion-decoration
           aria-hidden="true"
         >
+          <span className="text-base">🎉</span>
           <Sparkles className="size-4" />
           <Sparkles className="mt-3 size-3" />
         </div>

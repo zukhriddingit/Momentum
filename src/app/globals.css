@@ -58,14 +58,31 @@ input {
 }
 
 [data-animate="enabled"] [data-completion-decoration] {
-  animation: momentum-celebration-float 1.8s ease-in-out infinite;
+  animation: momentum-celebration-float 1.8s ease-in-out 2;
 }
 
 [data-animate="disabled"] [data-completion-decoration] {
   animation: none;
 }
 
+@keyframes momentum-task-started {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+  40% {
+    box-shadow: 0 0 0 0.45rem rgba(124, 58, 237, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+}
+
+.momentum-task-started {
+  animation: momentum-task-started 1s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .momentum-task-started,
   [data-completion-decoration] {
     animation: none !important;
     transform: none !important;

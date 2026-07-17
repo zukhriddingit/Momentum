@@ -16,6 +16,9 @@ importers:
       "@supabase/supabase-js":
         specifier: 2.110.6
         version: 2.110.6
+      canvas-confetti:
+        specifier: 1.9.4
+        version: 1.9.4
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -53,6 +56,9 @@ importers:
       "@tailwindcss/postcss":
         specifier: 4.3.2
         version: 4.3.2
+      "@types/canvas-confetti":
+        specifier: 1.9.0
+        version: 1.9.0
       "@types/node":
         specifier: ^24.0.0
         version: 24.13.3
@@ -1431,6 +1437,12 @@ packages:
         integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==,
       }
 
+  "@types/canvas-confetti@1.9.0":
+    resolution:
+      {
+        integrity: sha512-aBGj/dULrimR1XDZLtG9JwxX1b4HPRF6CX9Yfwh3NvstZEm1ZL7RBnel4keCPSqs1ANRu1u2Aoz9R+VmtjYuTg==,
+      }
+
   "@types/chai@5.2.3":
     resolution:
       {
@@ -2051,6 +2063,12 @@ packages:
     resolution:
       {
         integrity: sha512-52noaS3DubycKSXaU30TwPGIp+POyQSUVa5jBEq3vkRkY0kjyb3LQgvhU6WGyCcyXqVLWO0Cw0Q6BSdD0kUfVA==,
+      }
+
+  canvas-confetti@1.9.4:
+    resolution:
+      {
+        integrity: sha512-yxQbJkAVrFXWNbTUjPqjF7G+g6pDotOUHGbkZq2NELZUMDpiJ85rIEazVb8GTaAptNW2miJAXbs1BtioA251Pw==,
       }
 
   chai@6.2.2:
@@ -5175,6 +5193,8 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  "@types/canvas-confetti@1.9.0": {}
+
   "@types/chai@5.2.3":
     dependencies:
       "@types/deep-eql": 4.0.2
@@ -5575,6 +5595,8 @@ snapshots:
   callsites@3.1.0: {}
 
   caniuse-lite@1.0.30001805: {}
+
+  canvas-confetti@1.9.4: {}
 
   chai@6.2.2: {}
 

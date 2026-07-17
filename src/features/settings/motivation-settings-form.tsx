@@ -134,7 +134,7 @@ export function MotivationSettingsForm({
         <CheckboxSetting
           name="celebrationAnimationEnabled"
           label="Celebration animation"
-          description="Use restrained motion when a new completion celebration opens."
+          description="Celebrate a new completion with a brief burst and playful emojis."
           defaultChecked={settings.celebrationAnimationEnabled}
         />
         <CheckboxSetting
