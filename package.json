@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:db": "supabase test db --local",
+    "test:demo": "node scripts/with-local-supabase.mjs node tests/demo/demo-reproducibility.mjs",
     "test:integration": "supabase db reset --local && node scripts/with-local-supabase.mjs vitest run --config vitest.integration.config.ts",
     "test:e2e": "supabase db reset --local && node scripts/with-local-supabase.mjs playwright test",
     "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:db && pnpm test:integration && pnpm test:e2e && pnpm build"

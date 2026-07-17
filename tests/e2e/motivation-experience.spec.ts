@@ -130,12 +130,12 @@ test("personal motivation settings persist across completions and deadline nudge
     headers: jobHeaders,
   });
   expect(firstScan.ok()).toBe(true);
-  expect(await firstScan.json()).toEqual({ scannedCount: 1, createdCount: 1 });
+  expect(await firstScan.json()).toEqual({ scannedCount: 2, createdCount: 2 });
   const retryScan = await request.post("/api/jobs/deadline-nudges", {
     headers: jobHeaders,
   });
   expect(retryScan.ok()).toBe(true);
-  expect(await retryScan.json()).toEqual({ scannedCount: 1, createdCount: 0 });
+  expect(await retryScan.json()).toEqual({ scannedCount: 2, createdCount: 0 });
 
   await page.goto("/notifications");
   await expect(

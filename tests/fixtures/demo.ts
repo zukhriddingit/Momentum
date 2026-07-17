@@ -1,11 +1,12 @@
 export const DEMO = {
   userId: "10000000-0000-4000-8000-000000000001",
+  teammateId: "10000000-0000-4000-8000-000000000002",
   workspaceId: "20000000-0000-4000-8000-000000000001",
   projectId: "30000000-0000-4000-8000-000000000001",
   candidateTaskId: "40000000-0000-4000-8000-000000000001",
+  dueSoonTaskId: "40000000-0000-4000-8000-000000000002",
   email: "demo@momentum.local",
   password: "momentum-demo",
-  teammateId: "10000000-0000-4000-8000-000000000002",
   teammateEmail: "teammate@momentum.local",
   teammatePassword: "momentum-demo",
 } as const;

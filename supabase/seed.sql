@@ -5,7 +5,7 @@ declare
   workspace_id constant uuid := '20000000-0000-4000-8000-000000000001';
   project_id constant uuid := '30000000-0000-4000-8000-000000000001';
   candidate_task_id constant uuid := '40000000-0000-4000-8000-000000000001';
-  in_progress_task_id constant uuid := '40000000-0000-4000-8000-000000000002';
+  due_soon_task_id constant uuid := '40000000-0000-4000-8000-000000000002';
   first_history_task_id constant uuid := '40000000-0000-4000-8000-000000000003';
   second_history_task_id constant uuid := '40000000-0000-4000-8000-000000000004';
   first_focus_id constant uuid := '50000000-0000-4000-8000-000000000001';
@@ -182,14 +182,14 @@ begin
       demo_user_id
     ),
     (
-      in_progress_task_id,
+      due_soon_task_id,
       project_id,
       'Review onboarding copy',
       'Give the onboarding flow a supportive, concise copy pass.',
-      teammate_user_id,
+      demo_user_id,
       'in_progress',
       'small',
-      demo_now + interval '5 days',
+      demo_now + interval '12 hours',
       null,
       demo_user_id
     ),
@@ -384,5 +384,24 @@ begin
       1,
       second_completed_at
     );
+
+  insert into public.notifications (
+    id, user_id, workspace_id, project_id, task_id, event_type,
+    source_id, tone, template_key, title, body, read_at, created_at
+  ) values (
+    '90000000-0000-4000-8000-000000000001',
+    demo_user_id,
+    workspace_id,
+    project_id,
+    second_history_task_id,
+    'focus_task_completed',
+    second_completion_id,
+    'friendly',
+    'seed-history-v1',
+    'Focus task complete',
+    'A focused step moved the project forward.',
+    second_completed_at,
+    second_completed_at
+  );
 end;
 $$;

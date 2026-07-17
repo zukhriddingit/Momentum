@@ -119,8 +119,8 @@ describe("deadline nudge scanner", () => {
 
     const first = await scanDeadlineNudges({ occurredAt });
     const retry = await scanDeadlineNudges({ occurredAt });
-    expect(first).toEqual({ scannedCount: 2, createdCount: 2 });
-    expect(retry).toEqual({ scannedCount: 2, createdCount: 0 });
+    expect(first).toEqual({ scannedCount: 3, createdCount: 3 });
+    expect(retry).toEqual({ scannedCount: 3, createdCount: 0 });
 
     const firstNotifications = await database()<
       Array<{ event_type: string; task_id: string; deadline_at: Date }>
@@ -148,7 +148,7 @@ describe("deadline nudge scanner", () => {
       where id = ${dueSoon.taskId}
     `;
     expect(await scanDeadlineNudges({ occurredAt })).toEqual({
-      scannedCount: 2,
+      scannedCount: 3,
       createdCount: 1,
     });
 
@@ -158,7 +158,7 @@ describe("deadline nudge scanner", () => {
       where id = ${dueSoon.taskId}
     `;
     expect(await scanDeadlineNudges({ occurredAt })).toEqual({
-      scannedCount: 1,
+      scannedCount: 2,
       createdCount: 0,
     });
 
