@@ -5,6 +5,9 @@ export const DEMO = {
   candidateTaskId: "40000000-0000-4000-8000-000000000001",
   email: "demo@momentum.local",
   password: "momentum-demo",
+  teammateId: "10000000-0000-4000-8000-000000000002",
+  teammateEmail: "teammate@momentum.local",
+  teammatePassword: "momentum-demo",
 } as const;
 
 export const DEMO_COMPLETION_ACHIEVEMENT_CODES = [
