@@ -77,7 +77,12 @@ test("clean guided demo persists momentum and stays idempotent", async ({
   await expect(
     page.getByTestId("completion-celebration-effect"),
   ).toHaveAttribute("data-celebration-state", "seen");
-  await page.getByRole("button", { name: "Keep the momentum going" }).click();
+  const continueButton = page.getByRole("button", {
+    name: "Keep the momentum going",
+  });
+  await expect(continueButton).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("completion-celebration")).toHaveCount(0);
   await page.getByRole("link", { name: "Dashboard" }).click();
 
   await expect(page.getByTestId("total-points")).toHaveText("93");
