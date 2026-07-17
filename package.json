@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "node scripts/with-local-supabase.mjs next dev",
+    "demo:provision": "node scripts/provision-demo.mjs",
+    "demo:reset": "node scripts/reset-demo.mjs",
+    "demo:nudges": "node scripts/trigger-deadline-nudges.mjs",
     "supabase:start": "supabase start -x studio,storage-api,imgproxy,postgres-meta,edge-runtime,logflare,vector,realtime,mailpit",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset --local",
