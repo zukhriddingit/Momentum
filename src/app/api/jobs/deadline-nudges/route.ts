@@ -44,7 +44,9 @@ export async function POST(request: Request) {
   });
 
   try {
-    const occurredAt = await requestNow();
+    const occurredAt = await requestNow(
+      request.headers.get("x-momentum-test-now"),
+    );
     const receipt = await scanDeadlineNudges({ occurredAt });
     logServerEvent({
       level: "info",

@@ -23,7 +23,7 @@ export function resolveRequestNow(input: {
   return input.systemNow;
 }
 
-export async function requestNow(): Promise<Date> {
+export async function requestNow(testNowHeader?: string | null): Promise<Date> {
   const environment = readRuntimeEnvironment().name;
   const allowTestClock = process.env.MOMENTUM_ALLOW_TEST_CLOCK === "true";
   const systemNow = new Date();
@@ -32,11 +32,14 @@ export async function requestNow(): Promise<Date> {
     return systemNow;
   }
 
-  const headerStore = await headers();
+  const testNow =
+    testNowHeader === undefined
+      ? (await headers()).get("x-momentum-test-now")
+      : testNowHeader;
   return resolveRequestNow({
     environment,
     allowTestClock,
-    testNow: headerStore.get("x-momentum-test-now"),
+    testNow,
     systemNow,
   });
 }
