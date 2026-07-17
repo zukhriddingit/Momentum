@@ -3,6 +3,10 @@
 Use this checklist for each authorized hosted pilot environment. An unchecked
 box is not a passed check; attach real evidence and request IDs where useful.
 
+Production environment reviewed July 17, 2026:
+<https://momentum-bay-two.vercel.app>. Only checks actually exercised against
+that hosted environment are marked complete below.
+
 ## Environment and data safety
 
 - [ ] Preview/demo and Production use separate Supabase projects.
@@ -13,10 +17,12 @@ box is not a passed check; attach real evidence and request IDs where useful.
       preview redirect patterns were reviewed.
 - [ ] Password auth works; email confirmation, magic links, and OAuth remain
       disabled while no callback route exists.
-- [ ] The linked Supabase project reference is the intended target.
-- [ ] `supabase db push --linked --dry-run` output was reviewed before the
+- [x] Production password signup works with email confirmation disabled; no
+      OAuth provider is enabled in the hosted Supabase project.
+- [x] The linked Supabase project reference is the intended target.
+- [x] `supabase db push --linked --dry-run` output was reviewed before the
       migration push.
-- [ ] Database URLs, service-role keys, demo passwords, and job secrets are
+- [x] Database URLs, service-role keys, demo passwords, and job secrets are
       stored only in approved server/operator secret stores.
 - [ ] Demo credentials were shared only through the approved secret-sharing
       channel and were not placed in source, tickets, chat, or screenshots.
@@ -28,8 +34,10 @@ box is not a passed check; attach real evidence and request IDs where useful.
 
 ## Application smoke checks
 
-- [ ] `GET /api/health` returned HTTP 200 with only
+- [x] `GET /api/health` returned HTTP 200 with only
       status/environment/release/requestId and an `x-request-id` header.
+- [x] A fresh user signed up, created a workspace and project, then reloaded the
+      hosted project URL with the authenticated session and data preserved.
 - [ ] The complete guided demo in [demo-script.md](demo-script.md) passed at a
       desktop width.
 - [ ] At 390×844, navigation, task controls, feedback, and celebration dialogs
@@ -65,8 +73,8 @@ box is not a passed check; attach real evidence and request IDs where useful.
 
 ## Release, incidents, and exclusions
 
-- [ ] `pnpm check:secrets` passed against the exact tracked release commit.
-- [ ] `pnpm validate` passed, and its actual suite/assertion counts were saved.
+- [x] `pnpm check:secrets` passed against the exact tracked release commit.
+- [x] `pnpm validate` passed, and its actual suite/assertion counts were saved.
 - [ ] Pilot participants were told the known exclusions: no Resend/production
       email, SMS/phone collection, quiet hours, production scheduler or delivery
       workers, deadline-job scheduling, invitations/member administration,

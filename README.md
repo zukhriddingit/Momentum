@@ -35,6 +35,12 @@ Database resets apply all migrations in order. The first creates the Slice 1 col
 
 ## Environments and hosted setup
 
+Production is live at
+[momentum-bay-two.vercel.app](https://momentum-bay-two.vercel.app). On July 17,
+2026, the production health endpoint returned HTTP 200 and a fresh-user browser
+smoke test verified immediate password signup, workspace creation, project
+creation, and persisted authentication/data after reload.
+
 Momentum distinguishes `local`, `test`, `preview`, and `production` with
 `MOMENTUM_ENVIRONMENT`. Preview/demo and Production require separate Supabase
 projects and separate Vercel variable scopes. Browser code receives only
@@ -160,3 +166,7 @@ motivation or AI decisions; complex analytics; native mobile applications; a
 feedback administration dashboard; a broad UI redesign; an observability
 vendor; or automatic Production migration/deployment. See the approved design
 and implementation plan under `docs/superpowers/` for the exact boundaries.
+
+The hosted production smoke test covers self-service signup and onboarding. The
+seeded 52-point guided-demo identity and reset workflow remain local/controlled
+demo operations and were not provisioned into the Production database.
