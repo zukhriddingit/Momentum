@@ -68,6 +68,13 @@ Streak behavior follows the approved amendment: a weekday without a selected Foc
 
 ## Guided demo and deadline nudges
 
+The exact **2 → 3** streak walkthrough is a workday demo. Run it Monday through
+Friday in the demo owner's `America/New_York` timezone. Preview provision/reset
+refuses weekends before any mutation because weekends must neither increment nor
+break a streak. Automated demo tests use the request clock only when the runtime
+is classified as `test`; a browser header cannot change trusted time in Local,
+Preview, or Production.
+
 Each user can select Calm, Friendly, Energetic, or Minimal messages under `/settings`. Tone, animation, achievement visibility, deadline-nudge preference, and timezone are personal settings; none of them change trusted reward calculations. Completion messages are selected deterministically and persisted with the completion receipt, so a reload shows the same wording.
 
 Provisioning and reset are operator-only commands. They require the environment
@@ -122,8 +129,9 @@ The CI-equivalent release gate is:
 pnpm validate
 ```
 
-The integration, end-to-end, and demo commands reset the local database. Never
-point them at a shared or Production database. The release gate covers
+The database, integration, end-to-end, and demo commands reset the local
+database so every suite starts from its declared fixture. Never point them at a
+shared or Production database. The release gate covers
 formatting, lint, strict types, unit tests, pgTAP, integration tests, existing
 Playwright flows, demo reproducibility, the clean guided demo, tracked-source
 secret scanning, and the Production build.

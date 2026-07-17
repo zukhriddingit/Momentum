@@ -4,9 +4,12 @@ import { EXPECTED_DEMO_FIXTURE_SUMMARY } from "../../scripts/lib/demo-fixture.mj
 import {
   provisionDemoApplicationData,
   reportVerifiedDemoFixtureSummary,
+  requireGuidedDemoWorkday,
   safeFetch,
   verifyHostedDemoProject,
+  verifyLocalDemoTargets,
 } from "../../scripts/provision-demo.mjs";
+import { resetDemo } from "../../scripts/reset-demo.mjs";
 
 function assertSafeError(error, message, rawValue) {
   assert.equal(error.message, message);
@@ -64,6 +67,56 @@ assert.equal(
   }),
   projectRef,
 );
+
+assert.equal(
+  verifyLocalDemoTargets({
+    supabaseUrl: "http://127.0.0.1:54321",
+    databaseUrl: "postgresql://postgres:postgres@localhost:54322/postgres",
+  }),
+  true,
+);
+for (const [supabaseUrl, databaseUrl] of [
+  [
+    "https://remote.example.com",
+    "postgresql://postgres:password@localhost:54322/postgres",
+  ],
+  [
+    "http://127.0.0.1:54321",
+    "postgresql://postgres:password@remote.example.com:5432/postgres",
+  ],
+]) {
+  assert.throws(
+    () => verifyLocalDemoTargets({ supabaseUrl, databaseUrl }),
+    /must be loopback/u,
+  );
+}
+
+assert.equal(
+  requireGuidedDemoWorkday(new Date("2026-07-17T16:00:00.000Z")).toISOString(),
+  "2026-07-17T16:00:00.000Z",
+);
+await assert.rejects(
+  async () => requireGuidedDemoWorkday(new Date("2026-07-18T16:00:00.000Z")),
+  /Monday through Friday/u,
+);
+
+let destructiveResetRan = false;
+await assert.rejects(
+  resetDemo({
+    env: {
+      MOMENTUM_ENVIRONMENT: "preview",
+      MOMENTUM_SUPABASE_PROJECT_REF: projectRef,
+    },
+    now: new Date("2026-07-18T16:00:00.000Z"),
+    readLinkedRef: async () => projectRef,
+    askForConfirmation: async () => `RESET ${projectRef}`,
+    runLinkedReset: async () => {
+      destructiveResetRan = true;
+    },
+  }),
+  /Monday through Friday/u,
+);
+assert.equal(destructiveResetRan, false);
 assert.equal(
   verifyHostedDemoProject({
     projectRef,

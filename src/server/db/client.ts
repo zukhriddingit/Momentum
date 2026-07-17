@@ -16,6 +16,7 @@ export function database(): ReturnType<typeof postgres> {
     max: 5,
     prepare: false,
     idle_timeout: 20,
+    connect_timeout: 5,
   });
 
   return client;

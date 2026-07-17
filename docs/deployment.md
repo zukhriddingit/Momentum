@@ -20,6 +20,11 @@ job secret into Production. `MOMENTUM_ENVIRONMENT` must be set explicitly to
 `preview` or `production` in the matching Vercel scope. Local helpers default to
 `local`; automated test processes set `test`.
 
+`--allow-local` is an automated/local-test escape hatch, not an
+environment-label trust decision. It additionally requires both the Supabase
+API and PostgreSQL hosts to be loopback (`localhost`, `127.0.0.1`, or `::1`)
+before any service-role request or database write.
+
 ## Environment-variable contract
 
 Copy `.env.example` to an ignored local environment file and replace its
@@ -93,6 +98,10 @@ pnpm demo:provision
 pnpm demo:reset
 ```
 
+Run these Preview commands Monday through Friday in `America/New_York`. They
+refuse weekends before mutation so the canonical **2 → 3** walkthrough never
+contradicts the rule that weekends leave streaks unchanged.
+
 `pnpm demo:reset` refuses Production, verifies the linked project reference,
 and requires the operator to type the displayed confirmation phrase. It is
 destructive and must never target shared or Production data.
@@ -136,6 +145,8 @@ keys:
 `status: "degraded"` and the same safe metadata. The response must not include
 hostnames, connection strings, keys, raw errors, schema details, or user data.
 Capture the response `x-request-id` when investigating an incident.
+The public probe has a two-second response deadline and returns degraded rather
+than waiting indefinitely; database connection attempts are also bounded.
 
 ## Rollback
 

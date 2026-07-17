@@ -35,20 +35,46 @@ export async function POST(request: Request) {
     return response;
   }
 
-  const occurredAt = await requestNow();
-  const receipt = await scanDeadlineNudges({ occurredAt });
   logServerEvent({
     level: "info",
-    event: "deadline_scan_completed",
+    event: "deadline_scan_started",
     requestId,
     route: "/api/jobs/deadline-nudges",
     method: "POST",
-    status: 200,
-    durationMs: Math.round(performance.now() - startedAt),
-    scannedCount: receipt.scannedCount,
-    createdCount: receipt.createdCount,
   });
-  const response = NextResponse.json(receipt);
-  response.headers.set(REQUEST_ID_HEADER, requestId);
-  return response;
+
+  try {
+    const occurredAt = await requestNow();
+    const receipt = await scanDeadlineNudges({ occurredAt });
+    logServerEvent({
+      level: "info",
+      event: "deadline_scan_completed",
+      requestId,
+      route: "/api/jobs/deadline-nudges",
+      method: "POST",
+      status: 200,
+      durationMs: Math.round(performance.now() - startedAt),
+      scannedCount: receipt.scannedCount,
+      createdCount: receipt.createdCount,
+    });
+    const response = NextResponse.json(receipt);
+    response.headers.set(REQUEST_ID_HEADER, requestId);
+    return response;
+  } catch {
+    logServerEvent({
+      level: "error",
+      event: "deadline_scan_failed",
+      requestId,
+      route: "/api/jobs/deadline-nudges",
+      method: "POST",
+      status: 500,
+      durationMs: Math.round(performance.now() - startedAt),
+    });
+    const response = NextResponse.json(
+      { error: "Deadline scan failed." },
+      { status: 500 },
+    );
+    response.headers.set(REQUEST_ID_HEADER, requestId);
+    return response;
+  }
 }

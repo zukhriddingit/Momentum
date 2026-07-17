@@ -30,8 +30,30 @@ export const EXPECTED_DEMO_FIXTURE_SUMMARY = Object.freeze({
   hasCurrentFocus: false,
   initialPoints: 41,
   achievementCodes: Object.freeze(["first_step", "focused_finish"]),
+  achievementIdentities: Object.freeze([
+    `first_step:${DEMO_FIXTURE_IDS.firstCompletion}`,
+    `focused_finish:${DEMO_FIXTURE_IDS.firstCompletion}`,
+  ]),
   notificationCount: 1,
+  representativeNotification: Object.freeze({
+    id: DEMO_FIXTURE_IDS.representativeNotification,
+    taskId: DEMO_FIXTURE_IDS.secondHistoryTask,
+    eventType: "focus_task_completed",
+    sourceId: DEMO_FIXTURE_IDS.secondCompletion,
+    tone: "friendly",
+    templateKey: "seed-history-v1",
+    title: "Focus task complete",
+    body: "A focused step moved the project forward.",
+  }),
   dueSoonCount: 1,
+  candidateTask: Object.freeze({
+    id: DEMO_FIXTURE_IDS.candidateTask,
+    title: "Prepare launch brief",
+    status: "todo",
+    effort: "medium",
+    assignedToOwner: true,
+    dueHoursFromDemoNow: 240,
+  }),
   expectedCompletionPoints: 52,
   expectedPostCompletionStreak: 3,
   expectedProgressPercent: 75,
@@ -115,9 +137,41 @@ export async function readDemoFixtureSummary({
         exists(select 1 from public.focus_selections where user_id = ${ownerId} and work_date = ${dates.currentWorkDate}) as has_current_focus,
         (select coalesce(sum(points), 0)::integer from public.point_ledger where user_id = ${ownerId}) as initial_points,
         (select array_agg(achievement_code order by achievement_code) from public.achievement_grants where user_id = ${ownerId}) as achievement_codes,
+        (select array_agg(achievement_code || ':' || completion_id::text order by achievement_code) from public.achievement_grants where user_id = ${ownerId}) as achievement_identities,
         (select count(*)::integer from public.notifications where user_id = ${ownerId}) as notification_count,
-        (select count(*)::integer from public.tasks where assignee_id = ${ownerId} and status <> 'done' and due_at > ${dates.demoNow} and due_at <= ${dates.demoNow} + interval '24 hours') as due_soon_count
+        (select json_build_object(
+          'id', notification.id,
+          'taskId', notification.task_id,
+          'eventType', notification.event_type::text,
+          'sourceId', notification.source_id,
+          'tone', notification.tone::text,
+          'templateKey', notification.template_key,
+          'title', notification.title,
+          'body', notification.body
+        ) from public.notifications as notification where notification.id = ${DEMO_FIXTURE_IDS.representativeNotification}) as representative_notification,
+        (select count(*)::integer from public.tasks where assignee_id = ${ownerId} and status <> 'done' and due_at > ${dates.demoNow} and due_at <= ${dates.demoNow} + interval '24 hours') as due_soon_count,
+        (select json_build_object(
+          'id', task.id,
+          'title', task.title,
+          'status', task.status::text,
+          'effort', task.effort::text,
+          'assignedToOwner', task.assignee_id = ${ownerId},
+          'dueHoursFromDemoNow', (extract(epoch from (task.due_at - ${dates.demoNow})) / 3600)::integer
+        ) from public.tasks as task where task.id = ${DEMO_FIXTURE_IDS.candidateTask}) as candidate_task
     `;
+
+    const basePoints = {
+      small: 20,
+      medium: 40,
+      large: 70,
+      extra_large: 100,
+    }[row.candidate_task?.effort];
+    const dueHours = row.candidate_task?.dueHoursFromDemoNow;
+    const timingMultiplier = dueHours >= 24 ? 1.2 : dueHours > 0 ? 1.1 : 1;
+    const streakMultiplier = 1 + Math.min(0.2, 0.04 * row.current_streak);
+    const expectedCompletionPoints = Number.isFinite(basePoints)
+      ? Math.round(basePoints * timingMultiplier * streakMultiplier)
+      : null;
 
     return {
       userCount: row.user_count,
@@ -134,10 +188,12 @@ export async function readDemoFixtureSummary({
       hasCurrentFocus: row.has_current_focus,
       initialPoints: row.initial_points,
       achievementCodes: row.achievement_codes,
+      achievementIdentities: row.achievement_identities,
       notificationCount: row.notification_count,
+      representativeNotification: row.representative_notification,
       dueSoonCount: row.due_soon_count,
-      expectedCompletionPoints:
-        EXPECTED_DEMO_FIXTURE_SUMMARY.expectedCompletionPoints,
+      candidateTask: row.candidate_task,
+      expectedCompletionPoints,
       expectedPostCompletionStreak:
         EXPECTED_DEMO_FIXTURE_SUMMARY.expectedPostCompletionStreak,
       expectedProgressPercent:

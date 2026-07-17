@@ -35,6 +35,64 @@ export function requireDemoEnvironment(env, { allowLocal }) {
   return value;
 }
 
+function isLoopbackHostname(hostname) {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  );
+}
+
+export function verifyLocalDemoTargets({ supabaseUrl, databaseUrl }) {
+  let api;
+  try {
+    api = new URL(supabaseUrl);
+  } catch {
+    throw new Error("Local Supabase API URL is invalid.");
+  }
+  if (
+    (api.protocol !== "http:" && api.protocol !== "https:") ||
+    api.username ||
+    api.password ||
+    !isLoopbackHostname(api.hostname)
+  ) {
+    throw new Error("Local demo API target must be loopback.");
+  }
+
+  let database;
+  try {
+    database = new URL(databaseUrl);
+  } catch {
+    throw new Error("Local demo database URL is invalid.");
+  }
+  if (
+    (database.protocol !== "postgres:" &&
+      database.protocol !== "postgresql:") ||
+    !isLoopbackHostname(database.hostname)
+  ) {
+    throw new Error("Local demo database target must be loopback.");
+  }
+
+  return true;
+}
+
+export function requireGuidedDemoWorkday(now = new Date()) {
+  if (Number.isNaN(now.getTime())) {
+    throw new Error("Guided demo date is invalid.");
+  }
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+  }).format(now);
+  if (weekday === "Sat" || weekday === "Sun") {
+    throw new Error(
+      "The guided demo must run on a Monday through Friday workday.",
+    );
+  }
+  return now;
+}
+
 function identityContainsProjectRef(identity, projectRef) {
   return identity.split(/[._-]/u).includes(projectRef);
 }
@@ -193,15 +251,23 @@ export async function provisionDemo({ allowLocal = false } = {}) {
   for (const name of required) {
     requiredValue(name);
   }
-  if (environment !== "local") {
+  const supabaseUrl = requiredValue("NEXT_PUBLIC_SUPABASE_URL");
+  const databaseUrl = requiredValue("DATABASE_URL");
+  const now = new Date();
+  if (environment === "local") {
+    verifyLocalDemoTargets({ supabaseUrl, databaseUrl });
+  } else {
     verifyHostedDemoProject({
       projectRef: requiredValue("MOMENTUM_SUPABASE_PROJECT_REF"),
-      supabaseUrl: requiredValue("NEXT_PUBLIC_SUPABASE_URL"),
-      databaseUrl: requiredValue("DATABASE_URL"),
+      supabaseUrl,
+      databaseUrl,
     });
   }
+  if (environment === "preview") {
+    requireGuidedDemoWorkday(now);
+  }
   const client = createClient(
-    requiredValue("NEXT_PUBLIC_SUPABASE_URL"),
+    supabaseUrl,
     requiredValue("SUPABASE_SERVICE_ROLE_KEY"),
     {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -224,10 +290,10 @@ export async function provisionDemo({ allowLocal = false } = {}) {
   });
   return reportVerifiedDemoFixtureSummary(
     await provisionDemoApplicationData({
-      databaseUrl: requiredValue("DATABASE_URL"),
+      databaseUrl,
       ownerId: owner.id,
       teammateId: teammate.id,
-      now: new Date(),
+      now,
     }),
   );
 }

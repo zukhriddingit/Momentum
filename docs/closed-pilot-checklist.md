@@ -22,6 +22,9 @@ box is not a passed check; attach real evidence and request IDs where useful.
       channel and were not placed in source, tickets, chat, or screenshots.
 - [ ] `pnpm demo:reset` displayed the expected project reference, received the
       exact typed confirmation, and produced the canonical verified summary.
+- [ ] The exact **2 → 3** guided completion is scheduled Monday through Friday
+      in the demo owner's `America/New_York` timezone; no weekend override is
+      enabled.
 
 ## Application smoke checks
 
@@ -57,6 +60,8 @@ box is not a passed check; attach real evidence and request IDs where useful.
 - [ ] `pnpm demo:nudges` created the expected due-soon notification.
 - [ ] Repeating `pnpm demo:nudges` for the same task and exact deadline created
       zero duplicates.
+- [ ] Deadline-job logs contain a request-correlated start and completed or
+      failed outcome without task content, credentials, or raw errors.
 
 ## Release, incidents, and exclusions
 

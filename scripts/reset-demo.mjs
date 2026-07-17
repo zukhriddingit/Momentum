@@ -4,7 +4,7 @@ import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 
-import { provisionDemo } from "./provision-demo.mjs";
+import { provisionDemo, requireGuidedDemoWorkday } from "./provision-demo.mjs";
 
 const PROJECT_REF_PATTERN = /^[a-z0-9]{8,64}$/u;
 const LINKED_PROJECT_REF_URL = new URL(
@@ -81,8 +81,10 @@ export async function resetDemo({
   runLinkedReset = executeLinkedReset,
   provision = provisionDemo,
   log = console.info,
+  now = new Date(),
 } = {}) {
   const expectedRef = requireLinkedResetEnvironment(env);
+  requireGuidedDemoWorkday(now);
 
   let linkedRef;
   try {

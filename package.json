@@ -23,7 +23,7 @@
     "check:secrets": "node --test scripts/check-source-secrets.test.mjs && node scripts/check-source-secrets.mjs",
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run --config vitest.config.ts",
-    "test:db": "supabase test db --local",
+    "test:db": "supabase db reset --local && supabase test db --local",
     "test:demo": "node scripts/with-local-supabase.mjs node tests/demo/demo-reproducibility.mjs",
     "test:integration": "supabase db reset --local && node scripts/with-local-supabase.mjs vitest run --config vitest.integration.config.ts",
     "test:e2e": "supabase db reset --local && node scripts/with-local-supabase.mjs playwright test",

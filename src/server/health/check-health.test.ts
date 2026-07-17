@@ -17,4 +17,10 @@ describe("deployment health probe", () => {
       );
     await expect(checkHealth(probe)).resolves.toEqual({ ok: false });
   });
+
+  it("reports degraded when a probe does not settle before the deadline", async () => {
+    const probe = vi.fn(() => new Promise<never>(() => undefined));
+    await expect(checkHealth(probe, 5)).resolves.toEqual({ ok: false });
+    expect(probe).toHaveBeenCalledOnce();
+  });
 });

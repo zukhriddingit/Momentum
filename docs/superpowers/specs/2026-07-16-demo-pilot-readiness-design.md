@@ -56,6 +56,11 @@ approved file scope below, and preserve all Slice 1-3 behavior.
 - Preserve the approved workday rule throughout the demo fixture and tests: no
   Focus selection pauses, an incomplete selected Focus Task breaks, and
   weekends neither increment nor break a streak.
+- The canonical **2 → 3** guided completion therefore runs only Monday through
+  Friday in `America/New_York`. Preview provision/reset refuses weekends before
+  mutation; tests may move to the next workday only in the classified `test`
+  environment. Local, Preview, and Production never trust a request clock
+  header.
 - Treat the hosted demo database as dedicated and disposable. The demo reset
   command must refuse to target production, require an explicit typed
   confirmation and project reference, and never be exposed as a public route.

@@ -5,6 +5,7 @@ import { scanDeadlineNudges } from "@/server/notifications/scan-deadline-nudges"
 import { createProject } from "@/server/projects/create-project";
 import { createTask } from "@/server/tasks/create-task";
 import { createWorkspace } from "@/server/workspaces/create-workspace";
+import { demoWorkdayInstant } from "../fixtures/demo";
 import { insertAuthUser, selfServiceUuid } from "../fixtures/self-service";
 
 const addMilliseconds = (date: Date, milliseconds: number) =>
@@ -20,7 +21,7 @@ describe("deadline nudge scanner", () => {
   it("uses exact windows, preferences, task state, and deadline identities", async () => {
     const userId = selfServiceUuid(700);
     const disabledUserId = selfServiceUuid(701);
-    const occurredAt = new Date("2026-07-16T15:00:00.000Z");
+    const occurredAt = demoWorkdayInstant();
     await Promise.all([
       insertAuthUser({
         id: userId,

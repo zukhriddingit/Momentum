@@ -4,6 +4,13 @@ Use the dedicated disposable Preview/demo environment and the demo credential
 shared through the approved secret channel. Start from a freshly verified demo
 fixture; do not use Production data.
 
+Run this exact walkthrough Monday through Friday in the demo owner's
+`America/New_York` timezone. The **2 → 3** streak transition intentionally does
+not run on weekends: weekends neither increment nor break a streak, and the
+Preview provision/reset commands refuse before mutation. A weekend pilot can
+show persisted product state, but must schedule the exact completion walkthrough
+for the next workday.
+
 1. Sign in as the demo owner.
 2. Pause on the dashboard: the starting state is 41 points, a two-workday Focus
    Streak, and visible existing progress. Explain that a workday without a Focus
