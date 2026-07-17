@@ -1,15 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function updateSupabaseSession(request: NextRequest) {
+import { synchronizeRequestCookieHeader } from "@/server/auth/proxy-cookies";
+
+export async function updateSupabaseSession(
+  request: NextRequest,
+  requestHeaders = new Headers(request.headers),
+) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
   if (!url || !key) {
-    throw new Error("Local Supabase URL and publishable key are required.");
+    throw new Error("Supabase URL and publishable key are required.");
   }
 
-  let response = NextResponse.next({ request });
+  const nextResponse = () =>
+    NextResponse.next({ request: { headers: requestHeaders } });
+  let response = nextResponse();
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
@@ -17,7 +23,8 @@ export async function updateSupabaseSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
-        response = NextResponse.next({ request });
+        synchronizeRequestCookieHeader(requestHeaders, request.cookies);
+        response = nextResponse();
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
@@ -27,6 +34,5 @@ export async function updateSupabaseSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   return { response, user };
 }
