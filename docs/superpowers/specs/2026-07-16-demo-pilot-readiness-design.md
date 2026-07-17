@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-16
 
-**Status:** Approved in design review; awaiting written-spec review
+**Status:** Approved in design review and written-spec review
 
 **Baseline:** Commit `3266039` on `main`, tagged `momentum-mvp-demo`
 
@@ -776,6 +776,7 @@ implementation plan are reviewed. The approved expected scope is below.
 .env.example
 README.md
 package.json
+playwright.config.ts
 pnpm-lock.yaml
 scripts/with-local-supabase.mjs
 src/app/(app)/layout.tsx
@@ -796,6 +797,8 @@ tests/e2e/momentum-happy-path.spec.ts
 tests/e2e/motivation-experience.spec.ts
 tests/e2e/new-user-self-service.spec.ts
 tests/fixtures/demo.ts
+tests/integration/deadline-nudges.test.ts
+vitest.config.ts
 ```
 
 ### Created files
@@ -836,6 +839,7 @@ src/server/environment.test.ts
 src/server/feedback/submit-feedback.ts
 src/server/feedback/types.ts
 src/server/health/check-health.ts
+src/server/health/check-health.test.ts
 src/server/jobs/verify-job-secret.ts
 src/server/jobs/verify-job-secret.test.ts
 src/server/observability/logger.ts
