@@ -45,9 +45,15 @@ test("seeded user completes today's Focus Task and sees persisted momentum", asy
       /Nice work — your progress earned a new milestone\.|You reached an achievement through work you completed\./,
     ),
   ).toBeVisible();
+  await expect(
+    page.getByTestId("completion-celebration-effect"),
+  ).toHaveAttribute("data-celebration-state", "fired");
 
   await page.reload();
   await expect(page.getByTestId("completion-celebration")).toBeVisible();
+  await expect(
+    page.getByTestId("completion-celebration-effect"),
+  ).toHaveAttribute("data-celebration-state", "seen");
   await page.getByRole("button", { name: "Keep the momentum going" }).click();
   await page.getByRole("link", { name: "Dashboard" }).click();
 

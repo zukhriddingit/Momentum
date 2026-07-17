@@ -114,6 +114,11 @@ test("personal motivation settings persist across completions and deadline nudge
     .getByLabel("Deadline (optional)")
     .fill(demoNudgeDueAt().toISOString().slice(0, 16));
   await page.getByRole("button", { name: "Create task" }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "To Do" })
+      .getByRole("heading", { name: deadlineTaskName }),
+  ).toBeVisible();
 
   const jobHeaders = {
     authorization: `Bearer ${PLAYWRIGHT_JOB_SECRET}`,

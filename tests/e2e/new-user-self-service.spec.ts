@@ -81,6 +81,9 @@ test("new user builds and persists their first focused win", async ({
   await expect(celebration.getByText(COMPLETION_MESSAGE)).toBeVisible();
   await expect(celebration.getByText("100%", { exact: true })).toBeVisible();
   await expect(
+    page.getByTestId("completion-celebration-effect"),
+  ).toHaveAttribute("data-celebration-state", "reduced");
+  await expect(
     celebration.getByRole("button", { name: "Keep the momentum going" }),
   ).toBeEnabled();
   expect(
