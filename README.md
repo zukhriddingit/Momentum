@@ -67,7 +67,10 @@ Production is live at
 [momentum-bay-two.vercel.app](https://momentum-bay-two.vercel.app). On July 17,
 2026, the production health endpoint returned HTTP 200 and a fresh-user browser
 smoke test verified immediate password signup, workspace creation, project
-creation, and persisted authentication/data after reload.
+creation, and persisted authentication/data after reload. On July 18, GitHub
+OAuth was enabled and a separate real GitHub account claimed a pending cohort
+seat and assigned task, completed it, reloaded its persisted 20-point result,
+and recompleted it without receiving another reward.
 
 Momentum distinguishes `local`, `test`, `preview`, and `production` with
 `MOMENTUM_ENVIRONMENT`. Preview/demo and Production require separate Supabase

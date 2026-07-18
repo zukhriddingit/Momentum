@@ -78,10 +78,10 @@ Use environment-specific Auth settings and keep the redirect allow-list narrow:
 - Preview redirects: `https://*-<vercel-team>.vercel.app/**` for the team's
   controlled Vercel scope only
 
-Do not add a blanket redirect for unrelated domains. Momentum currently uses
-email/password authentication and keeps it available after GitHub OAuth is
-enabled. Hosted demo accounts are created already confirmed by the operator
-provisioner. Production email delivery remains deliberately deferred.
+Do not add a blanket redirect for unrelated domains. Momentum supports
+email/password authentication alongside GitHub OAuth. Hosted demo accounts are
+created already confirmed by the operator provisioner. Production email
+delivery remains deliberately deferred.
 
 Provision Production GitHub OAuth in this order. These are operator steps, not
 evidence that the current hosted environment has already been configured:
