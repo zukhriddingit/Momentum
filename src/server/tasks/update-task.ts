@@ -5,8 +5,10 @@ import { getTaskPermissions } from "@/domain/tasks/task-permissions";
 import { database } from "@/server/db/client";
 import { AppError } from "@/server/errors";
 import { completeTaskInTransaction } from "@/server/tasks/complete-task-transaction";
+import { resolveTaskAssignee } from "@/server/tasks/resolve-task-assignee";
 import type {
   MembershipRole,
+  TaskAssigneeRef,
   TaskMutationReceipt,
   TaskStatus,
 } from "@/server/types";
@@ -16,7 +18,8 @@ interface EditableTaskRow {
   project_id: string;
   title: string;
   description: string | null;
-  assignee_id: string;
+  assignee_id: string | null;
+  cohort_seat_id: string | null;
   status: TaskStatus;
   effort: EffortLevel;
   due_at: Date | null;
@@ -39,7 +42,7 @@ function descriptiveFieldsMatch(
   input: {
     title: string;
     description: string | null;
-    assigneeId: string;
+    assignee: TaskAssigneeRef;
     effort: EffortLevel;
     dueAt: Date | null;
   },
@@ -47,10 +50,19 @@ function descriptiveFieldsMatch(
   return (
     task.title === input.title &&
     task.description === input.description &&
-    task.assignee_id === input.assigneeId &&
+    assigneeRefsMatch(task, input.assignee) &&
     task.effort === input.effort &&
     datesMatch(task.due_at, input.dueAt)
   );
+}
+
+function assigneeRefsMatch(
+  task: Pick<EditableTaskRow, "assignee_id" | "cohort_seat_id">,
+  assignee: TaskAssigneeRef,
+): boolean {
+  return assignee.kind === "member"
+    ? task.assignee_id === assignee.userId && task.cohort_seat_id === null
+    : task.assignee_id === null && task.cohort_seat_id === assignee.seatId;
 }
 
 export async function updateTask(input: {
@@ -58,7 +70,7 @@ export async function updateTask(input: {
   taskId: string;
   title: string;
   description: string | null;
-  assigneeId: string;
+  assignee: TaskAssigneeRef;
   effort: EffortLevel;
   dueAt: Date | null;
   status: TaskStatus;
@@ -72,6 +84,7 @@ export async function updateTask(input: {
         task.title,
         task.description,
         task.assignee_id,
+        task.cohort_seat_id,
         task.status,
         task.effort,
         task.due_at,
@@ -98,11 +111,11 @@ export async function updateTask(input: {
       assigneeId: task.assignee_id,
       firstCompletedAt: task.first_completed_at,
     });
-    if (!permissions.canMove) {
+    if (!permissions.canEdit && !permissions.canMove) {
       throw new AppError("NOT_FOUND", "Task not found.");
     }
 
-    const assigneeChanged = task.assignee_id !== input.assigneeId;
+    const assigneeChanged = !assigneeRefsMatch(task, input.assignee);
     if (assigneeChanged && task.first_completed_at !== null) {
       if (!permissions.canEdit) {
         throw new AppError("NOT_FOUND", "Task not found.");
@@ -117,26 +130,40 @@ export async function updateTask(input: {
       throw new AppError("NOT_FOUND", "Task not found.");
     }
 
-    const [assigneeMembership] = await sql<Array<{ user_id: string }>>`
-      select membership.user_id
-      from public.workspace_memberships as membership
-      where membership.workspace_id = ${task.workspace_id}
-        and membership.user_id = ${input.assigneeId}
-      for key share of membership
-    `;
-    if (!assigneeMembership) {
-      throw new AppError("NOT_FOUND", "Task not found.");
-    }
+    const assignee = await resolveTaskAssignee(
+      sql,
+      task.workspace_id,
+      input.assignee,
+    );
+    const requestedStatus: TaskStatus = assignee.pending
+      ? "todo"
+      : input.status;
+    const canMoveAfterAssignment =
+      !assignee.pending &&
+      (permissions.canEdit || assignee.assigneeId === input.actorId);
 
     const requestsFirstCompletion =
-      input.status === "done" && task.status !== "done";
-    if (requestsFirstCompletion && !permissions.canComplete) {
+      requestedStatus === "done" && task.status !== "done";
+    if (
+      requestsFirstCompletion &&
+      (assignee.pending || assignee.assigneeId !== input.actorId)
+    ) {
       throw new AppError("NOT_FOUND", "Task not found.");
     }
     const requestsCompletionReplay =
-      input.status === "done" &&
+      requestedStatus === "done" &&
       task.status === "done" &&
-      permissions.canComplete;
+      !assignee.pending &&
+      assignee.assigneeId === input.actorId;
+
+    if (
+      requestedStatus !== task.status &&
+      !requestsFirstCompletion &&
+      !requestsCompletionReplay &&
+      !canMoveAfterAssignment
+    ) {
+      throw new AppError("NOT_FOUND", "Task not found.");
+    }
 
     if (requestsFirstCompletion || requestsCompletionReplay) {
       await sql`
@@ -144,7 +171,8 @@ export async function updateTask(input: {
         set
           title = ${input.title},
           description = ${input.description},
-          assignee_id = ${input.assigneeId},
+          assignee_id = ${assignee.assigneeId},
+          cohort_seat_id = ${assignee.cohortSeatId},
           effort = ${input.effort},
           due_at = ${input.dueAt},
           updated_at = ${input.occurredAt}
@@ -169,10 +197,11 @@ export async function updateTask(input: {
       set
         title = ${input.title},
         description = ${input.description},
-        assignee_id = ${input.assigneeId},
+        assignee_id = ${assignee.assigneeId},
+        cohort_seat_id = ${assignee.cohortSeatId},
         effort = ${input.effort},
         due_at = ${input.dueAt},
-        status = ${input.status},
+        status = ${requestedStatus},
         updated_at = ${input.occurredAt}
       where id = ${task.id}
     `;
@@ -180,7 +209,7 @@ export async function updateTask(input: {
       taskId: task.id,
       workspaceId: task.workspace_id,
       projectId: task.project_id,
-      status: input.status,
+      status: requestedStatus,
       completion: null,
     };
   });

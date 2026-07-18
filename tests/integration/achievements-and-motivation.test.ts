@@ -44,7 +44,7 @@ async function createTodoTask(input: {
     projectId: input.projectId,
     title: input.title,
     description: null,
-    assigneeId: input.userId,
+    assignee: { kind: "member", userId: input.userId },
     effort: "small",
     dueAt: null,
     status: "todo",

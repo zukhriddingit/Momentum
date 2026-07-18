@@ -24,15 +24,31 @@ const taskActionContextSchema = z.object({
 export type TaskActionState = ActionResult<TaskMutationReceipt> | null;
 
 function taskFields(formData: FormData) {
+  const assigneeKind = formData.get("assigneeKind");
+  const assigneeId = formData.get("assigneeId");
+  const assignee =
+    assigneeKind === "member"
+      ? { kind: assigneeKind, userId: assigneeId }
+      : assigneeKind === "cohort"
+        ? { kind: assigneeKind, seatId: assigneeId }
+        : { kind: assigneeKind };
+
   return {
     projectId: formData.get("projectId"),
     title: formData.get("title"),
     description: formData.get("description"),
-    assigneeId: formData.get("assigneeId"),
+    assignee,
     effort: formData.get("effort"),
     dueAt: formData.get("dueAt"),
     status: formData.get("status"),
   };
+}
+
+function taskFieldErrors(
+  error: z.ZodError<z.infer<typeof taskInputSchema>>,
+): Record<string, string[]> {
+  const { assignee, ...fieldErrors } = z.flattenError(error).fieldErrors;
+  return assignee ? { ...fieldErrors, assigneeId: assignee } : fieldErrors;
 }
 
 function revalidateTaskPaths(receipt: TaskMutationReceipt): void {
@@ -53,9 +69,7 @@ export async function createTaskAction(
       ok: false,
       code: "VALIDATION",
       message: "Check the task details, then try again.",
-      fieldErrors: parsed.success
-        ? undefined
-        : z.flattenError(parsed.error).fieldErrors,
+      fieldErrors: parsed.success ? undefined : taskFieldErrors(parsed.error),
     };
   }
 
@@ -87,9 +101,7 @@ export async function updateTaskAction(
       ok: false,
       code: "VALIDATION",
       message: "Check the task details, then try again.",
-      fieldErrors: parsed.success
-        ? undefined
-        : z.flattenError(parsed.error).fieldErrors,
+      fieldErrors: parsed.success ? undefined : taskFieldErrors(parsed.error),
     };
   }
 
@@ -100,7 +112,7 @@ export async function updateTaskAction(
       taskId: context.data.taskId,
       title: parsed.data.title,
       description: parsed.data.description,
-      assigneeId: parsed.data.assigneeId,
+      assignee: parsed.data.assignee,
       effort: parsed.data.effort,
       dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null,
       status: parsed.data.status,

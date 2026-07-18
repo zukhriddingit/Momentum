@@ -48,7 +48,7 @@ describe("owned notification center", () => {
       projectId: project.id,
       title: "Notification destination",
       description: null,
-      assigneeId: userA,
+      assignee: { kind: "member", userId: userA },
       effort: "small",
       dueAt: null,
       status: "todo",

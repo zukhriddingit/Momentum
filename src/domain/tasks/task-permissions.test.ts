@@ -74,6 +74,23 @@ describe("getTaskPermissions", () => {
     });
   });
 
+  it("lets a creator edit but not move or complete a pending cohort task", () => {
+    expect(
+      getTaskPermissions({
+        actorId: "creator",
+        role: "member",
+        createdBy: "creator",
+        assigneeId: null,
+        firstCompletedAt: null,
+      }),
+    ).toEqual({
+      canEdit: true,
+      canReassign: true,
+      canMove: false,
+      canComplete: false,
+    });
+  });
+
   it("freezes reassignment after first completion while preserving other privileges", () => {
     expect(
       getTaskPermissions({

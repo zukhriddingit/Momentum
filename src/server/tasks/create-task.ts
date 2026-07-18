@@ -4,7 +4,12 @@ import type { EffortLevel } from "@/domain/rewards/types";
 import { database } from "@/server/db/client";
 import { AppError } from "@/server/errors";
 import { completeTaskInTransaction } from "@/server/tasks/complete-task-transaction";
-import type { TaskMutationReceipt, TaskStatus } from "@/server/types";
+import { resolveTaskAssignee } from "@/server/tasks/resolve-task-assignee";
+import type {
+  TaskAssigneeRef,
+  TaskMutationReceipt,
+  TaskStatus,
+} from "@/server/types";
 
 interface AuthorizedProjectRow {
   id: string;
@@ -16,7 +21,7 @@ export async function createTask(input: {
   projectId: string;
   title: string;
   description: string | null;
-  assigneeId: string;
+  assignee: TaskAssigneeRef;
   effort: EffortLevel;
   dueAt: Date | null;
   status: TaskStatus;
@@ -36,24 +41,25 @@ export async function createTask(input: {
       throw new AppError("NOT_FOUND", "Task not found.");
     }
 
-    const [assigneeMembership] = await sql<Array<{ user_id: string }>>`
-      select membership.user_id
-      from public.workspace_memberships as membership
-      where membership.workspace_id = ${project.workspace_id}
-        and membership.user_id = ${input.assigneeId}
-      for key share of membership
-    `;
-    if (!assigneeMembership) {
-      throw new AppError("NOT_FOUND", "Task not found.");
-    }
+    const assignee = await resolveTaskAssignee(
+      sql,
+      project.workspace_id,
+      input.assignee,
+    );
 
-    if (input.status === "done" && input.actorId !== input.assigneeId) {
+    if (
+      input.status === "done" &&
+      (assignee.pending || input.actorId !== assignee.assigneeId)
+    ) {
       throw new AppError("NOT_FOUND", "Task not found.");
     }
 
     const taskId = crypto.randomUUID();
-    const initialStatus: TaskStatus =
-      input.status === "done" ? "todo" : input.status;
+    const initialStatus: TaskStatus = assignee.pending
+      ? "todo"
+      : input.status === "done"
+        ? "todo"
+        : input.status;
     await sql`
       insert into public.tasks (
         id,
@@ -61,6 +67,7 @@ export async function createTask(input: {
         title,
         description,
         assignee_id,
+        cohort_seat_id,
         status,
         effort,
         due_at,
@@ -72,7 +79,8 @@ export async function createTask(input: {
         ${project.id},
         ${input.title},
         ${input.description},
-        ${input.assigneeId},
+        ${assignee.assigneeId},
+        ${assignee.cohortSeatId},
         ${initialStatus},
         ${input.effort},
         ${input.dueAt},
@@ -101,7 +109,7 @@ export async function createTask(input: {
       taskId,
       workspaceId: project.workspace_id,
       projectId: project.id,
-      status: input.status,
+      status: initialStatus,
       completion: null,
     };
   });

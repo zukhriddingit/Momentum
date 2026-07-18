@@ -66,7 +66,7 @@ describe("deadline nudge scanner", () => {
         projectId: project.id,
         title: input.title,
         description: null,
-        assigneeId: input.assigneeId ?? userId,
+        assignee: { kind: "member", userId: input.assigneeId ?? userId },
         effort: "small",
         dueAt: input.dueAt,
         status: "todo",

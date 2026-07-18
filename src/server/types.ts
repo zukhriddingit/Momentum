@@ -13,6 +13,9 @@ export type { MembershipRole } from "@/domain/tasks/task-permissions";
 
 export type TaskStatus = "todo" | "in_progress" | "done";
 
+export type TaskAssigneeRef =
+  { kind: "member"; userId: string } | { kind: "cohort"; seatId: string };
+
 export interface WorkspaceSummary {
   id: string;
   name: string;

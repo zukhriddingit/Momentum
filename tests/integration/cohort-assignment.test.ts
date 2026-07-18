@@ -4,7 +4,12 @@ import { addCohortSeat } from "@/server/cohort/add-cohort-seat";
 import { claimCohortSeats } from "@/server/cohort/claim-cohort-seats";
 import type { CohortDirectoryEntry } from "@/server/cohort/types";
 import { closeDatabase, database } from "@/server/db/client";
+import { selectFocusTask } from "@/server/focus/select-focus-task";
 import { createProject } from "@/server/projects/create-project";
+import { completeTask } from "@/server/tasks/complete-task";
+import { createTask } from "@/server/tasks/create-task";
+import { moveTask } from "@/server/tasks/move-task";
+import { updateTask } from "@/server/tasks/update-task";
 import { createWorkspace } from "@/server/workspaces/create-workspace";
 import { requireWorkspaceManager } from "@/server/workspaces/require-workspace-manager";
 import { insertAuthUser, selfServiceUuid } from "../fixtures/self-service";
@@ -49,6 +54,14 @@ const lateLinkedParticipant = {
   githubUserId: "227412784",
   githubHandle: "late-linked-builder",
   profileUrl: "https://github.com/late-linked-builder",
+  sourcePullRequestUrl: null,
+} satisfies CohortDirectoryEntry;
+
+const pendingParticipant = {
+  ...participant,
+  githubUserId: "227412785",
+  githubHandle: "pending-builder",
+  profileUrl: "https://github.com/pending-builder",
   sourcePullRequestUrl: null,
 } satisfies CohortDirectoryEntry;
 
@@ -336,6 +349,154 @@ describe("cohort seat authorization and verified identity claims", () => {
         where id = ${taskId}
       `,
     ).toEqual([{ assignee_id: null, cohort_seat_id: seat.id }]);
+  });
+
+  it("keeps pending assignments in To Do and outside every trusted progress workflow", async () => {
+    const sql = database();
+    const seat = await addCohortSeat(seatInput(ownerId, pendingParticipant));
+    const foreignWorkspace = await createWorkspace({
+      actorId: ownerId,
+      name: "Foreign Pending Seat Workspace",
+    });
+    const foreignSeat = await addCohortSeat({
+      actorId: ownerId,
+      workspaceId: foreignWorkspace.id,
+      participant: pendingParticipant,
+      occurredAt,
+    });
+
+    await expect(
+      createTask({
+        actorId: ownerId,
+        projectId,
+        title: "Cross-workspace pending assignment",
+        description: null,
+        assignee: { kind: "cohort", seatId: foreignSeat.id },
+        effort: "small",
+        dueAt: null,
+        status: "todo",
+        occurredAt,
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Task not found.",
+    });
+
+    const task = await createTask({
+      actorId: ownerId,
+      projectId,
+      title: "Pending participant task",
+      description: null,
+      assignee: { kind: "cohort", seatId: seat.id },
+      effort: "medium",
+      dueAt: null,
+      status: "in_progress",
+      occurredAt,
+    });
+    expect(task).toEqual({
+      taskId: expect.any(String),
+      workspaceId,
+      projectId,
+      status: "todo",
+      completion: null,
+    });
+
+    await expect(
+      updateTask({
+        actorId: ownerId,
+        taskId: task.taskId,
+        title: "Pending participant task, clarified",
+        description: "Ready whenever you join.",
+        assignee: { kind: "cohort", seatId: seat.id },
+        effort: "medium",
+        dueAt: null,
+        status: "done",
+        occurredAt,
+      }),
+    ).resolves.toEqual({
+      taskId: task.taskId,
+      workspaceId,
+      projectId,
+      status: "todo",
+      completion: null,
+    });
+
+    const loadArtifacts = async () => {
+      const [artifacts] = await sql<
+        Array<{
+          focus_count: number;
+          completion_count: number;
+          ledger_count: number;
+          streak_count: number;
+          achievement_count: number;
+          notification_count: number;
+        }>
+      >`
+        select
+          (select count(*)::integer from public.focus_selections where task_id = ${task.taskId}) as focus_count,
+          (select count(*)::integer from public.task_completions where task_id = ${task.taskId}) as completion_count,
+          (select count(*)::integer
+             from public.point_ledger as ledger
+             join public.task_completions as completion on completion.id = ledger.completion_id
+            where completion.task_id = ${task.taskId}) as ledger_count,
+          (select count(*)::integer from public.focus_streaks where user_id = ${ownerId}) as streak_count,
+          (select count(*)::integer
+             from public.achievement_grants as grant_row
+             join public.task_completions as completion on completion.id = grant_row.completion_id
+            where completion.task_id = ${task.taskId}) as achievement_count,
+          (select count(*)::integer from public.notifications where task_id = ${task.taskId}) as notification_count
+      `;
+      return artifacts;
+    };
+    const artifactsBefore = await loadArtifacts();
+    expect(artifactsBefore).toEqual({
+      focus_count: 0,
+      completion_count: 0,
+      ledger_count: 0,
+      streak_count: 0,
+      achievement_count: 0,
+      notification_count: 0,
+    });
+
+    await expect(
+      selectFocusTask({
+        actorId: ownerId,
+        taskId: task.taskId,
+        occurredAt,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      moveTask({
+        actorId: ownerId,
+        taskId: task.taskId,
+        status: "in_progress",
+        occurredAt,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      completeTask({
+        actorId: ownerId,
+        taskId: task.taskId,
+        occurredAt,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    await expect(loadArtifacts()).resolves.toEqual(artifactsBefore);
+    await expect(
+      sql`
+        select assignee_id, cohort_seat_id, status::text, title, description
+        from public.tasks
+        where id = ${task.taskId}
+      `,
+    ).resolves.toEqual([
+      {
+        assignee_id: null,
+        cohort_seat_id: seat.id,
+        status: "todo",
+        title: "Pending participant task, clarified",
+        description: "Ready whenever you join.",
+      },
+    ]);
   });
 
   it("claims seats across workspaces, converts tasks, preserves roles, and is idempotent", async () => {

@@ -6,7 +6,7 @@ const validInput = {
   projectId: crypto.randomUUID(),
   title: "Write brief",
   description: "Describe the launch",
-  assigneeId: crypto.randomUUID(),
+  assignee: { kind: "member", userId: crypto.randomUUID() },
   effort: "medium",
   dueAt: "2026-07-20T16:00:00.000Z",
   status: "todo",
@@ -21,6 +21,24 @@ describe("taskInputSchema", () => {
         description: "  Describe the launch  ",
       }),
     ).toEqual(validInput);
+  });
+
+  it("accepts active members and pending cohort seats", () => {
+    const userId = crypto.randomUUID();
+    const seatId = crypto.randomUUID();
+
+    expect(
+      taskInputSchema.parse({
+        ...validInput,
+        assignee: { kind: "member", userId },
+      }).assignee,
+    ).toEqual({ kind: "member", userId });
+    expect(
+      taskInputSchema.parse({
+        ...validInput,
+        assignee: { kind: "cohort", seatId },
+      }).assignee,
+    ).toEqual({ kind: "cohort", seatId });
   });
 
   it.each(["", "   ", null] as const)(
@@ -42,7 +60,17 @@ describe("taskInputSchema", () => {
   it("rejects malformed IDs, title, deadline, effort, and status", () => {
     for (const invalidInput of [
       { ...validInput, projectId: "project" },
-      { ...validInput, assigneeId: "assignee" },
+      { ...validInput, assignee: { kind: "member", userId: "assignee" } },
+      { ...validInput, assignee: { kind: "cohort", seatId: "seat" } },
+      {
+        ...validInput,
+        assignee: { kind: "member", seatId: crypto.randomUUID() },
+      },
+      {
+        ...validInput,
+        assignee: { kind: "cohort", userId: crypto.randomUUID() },
+      },
+      { ...validInput, assignee: { kind: "unknown", id: crypto.randomUUID() } },
       { ...validInput, title: "" },
       { ...validInput, title: "x".repeat(201) },
       { ...validInput, dueAt: "tomorrow" },
