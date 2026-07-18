@@ -69,13 +69,30 @@ export interface WorkspaceOverview {
   >;
 }
 
+export type TaskAssigneeView =
+  | { kind: "member"; userId: string; displayName: string }
+  | {
+      kind: "cohort";
+      seatId: string;
+      githubHandle: string;
+      profileUrl: string;
+    };
+
+export type TaskAssigneeOption =
+  | { kind: "member"; userId: string; label: string }
+  | {
+      kind: "cohort";
+      seatId: string;
+      label: string;
+      githubHandle: string;
+    };
+
 export interface TaskView {
   id: string;
   createdBy: string;
   title: string;
   description: string | null;
-  assigneeId: string;
-  assigneeName: string;
+  assignee: TaskAssigneeView;
   status: TaskStatus;
   effort: EffortLevel;
   dueAt: string | null;
@@ -94,10 +111,7 @@ export interface ProjectBoardView {
   workDate: string;
   celebrationAnimationEnabled: boolean;
   actorRole: MembershipRole;
-  members: Array<{
-    id: string;
-    displayName: string;
-  }>;
+  assignees: TaskAssigneeOption[];
   tasks: TaskView[];
 }
 

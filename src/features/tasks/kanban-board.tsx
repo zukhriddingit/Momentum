@@ -3,8 +3,15 @@
 import { usePathname, useRouter } from "next/navigation";
 import { startTransition, useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { selectFocusTaskAction } from "@/features/focus/actions";
 import { moveTaskAction } from "@/features/tasks/actions";
+import {
+  filterTasksByAssignee,
+  type AssigneeFilter,
+} from "@/features/tasks/assignee-filter";
 import { TaskCard } from "@/features/tasks/task-card";
 import { TaskFormDialog } from "@/features/tasks/task-form-dialog";
 import type {
@@ -31,7 +38,13 @@ export function KanbanBoard({
   const [pending, setPending] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [startedTaskId, setStartedTaskId] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>("all");
   const startPulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filteredTasks = filterTasksByAssignee(
+    board.tasks,
+    assigneeFilter,
+    actorId,
+  );
 
   useEffect(
     () => () => {
@@ -143,23 +156,64 @@ export function KanbanBoard({
           mode="create"
           actorId={actorId}
           projectId={board.id}
-          members={board.members}
+          assignees={board.assignees}
           onSaved={(receipt) =>
             handleTaskMutation(receipt, "Task created and ready to move.")
           }
         />
+      </div>
+      <div className="mb-5 max-w-sm space-y-2">
+        <Label htmlFor="assignee-filter">Assignee filter</Label>
+        <Select
+          id="assignee-filter"
+          value={assigneeFilter}
+          onChange={(event) =>
+            setAssigneeFilter(event.target.value as AssigneeFilter)
+          }
+          className="motion-reduce:transition-none"
+        >
+          <option value="all">All assignees</option>
+          <option value="me">Me</option>
+          {board.assignees.map((assignee) => {
+            const value =
+              assignee.kind === "member"
+                ? `member:${assignee.userId}`
+                : `cohort:${assignee.seatId}`;
+            return (
+              <option key={value} value={value}>
+                {assignee.label}
+              </option>
+            );
+          })}
+        </Select>
       </div>
       {board.tasks.length === 0 ? (
         <p className="mb-5 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-6 text-violet-900">
           Create one clear task to give this project its first bit of momentum.
         </p>
       ) : null}
+      {board.tasks.length > 0 && filteredTasks.length === 0 ? (
+        <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-6 text-violet-900 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            No tasks match this assignee. Show all assignees to reset the board.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setAssigneeFilter("all")}
+            className="shrink-0 motion-reduce:transition-none"
+          >
+            Show all assignees
+          </Button>
+        </div>
+      ) : null}
       <div
         className="grid gap-5 lg:grid-cols-3"
         aria-label="Project task board"
       >
         {COLUMNS.map((column) => {
-          const tasks = board.tasks.filter(
+          const tasks = filteredTasks.filter(
             (task) => task.status === column.status,
           );
           return (
@@ -195,7 +249,7 @@ export function KanbanBoard({
                           mode="edit"
                           actorId={actorId}
                           projectId={board.id}
-                          members={board.members}
+                          assignees={board.assignees}
                           task={task}
                           onSaved={(receipt) =>
                             handleTaskMutation(receipt, "Task changes saved.")

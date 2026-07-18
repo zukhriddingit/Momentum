@@ -31,12 +31,17 @@ export function TaskCard({
   onMove: (taskId: string, status: TaskStatus) => void;
   editControl?: ReactNode;
 }) {
+  const activeAssignee = task.assignee.kind === "member";
+  const showMovementControls = activeAssignee && task.isCurrentUsersTask;
+
   return (
     <Card
       id={`task-${task.id}`}
       className={cn(
         "transition-shadow motion-reduce:transition-none",
-        task.isFocusTask && "border-violet-400 ring-2 ring-violet-100",
+        activeAssignee &&
+          task.isFocusTask &&
+          "border-violet-400 ring-2 ring-violet-100",
         startPulse && "momentum-task-started",
       )}
       data-testid={`task-${task.id}`}
@@ -45,7 +50,7 @@ export function TaskCard({
       <CardHeader className="pb-3">
         <div className="mb-2 flex flex-wrap gap-2">
           <Badge>{EFFORT_LABEL[task.effort]}</Badge>
-          {task.isFocusTask ? (
+          {activeAssignee && task.isFocusTask ? (
             <Badge className="bg-violet-100 text-violet-800">
               <Flame className="mr-1 size-3" aria-hidden="true" />
               Today&apos;s Focus
@@ -59,10 +64,27 @@ export function TaskCard({
           <p className="text-sm leading-6 text-slate-600">{task.description}</p>
         ) : null}
         <div className="space-y-2 text-xs text-slate-500">
-          <p className="flex items-center gap-2">
-            <UserRound className="size-3.5" aria-hidden="true" />
-            {task.assigneeName}
-          </p>
+          {task.assignee.kind === "member" ? (
+            <p className="flex items-center gap-2">
+              <UserRound className="size-3.5" aria-hidden="true" />
+              {task.assignee.displayName}
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <UserRound className="size-3.5" aria-hidden="true" />
+              <a
+                href={task.assignee.profileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-violet-700 underline-offset-2 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+              >
+                @{task.assignee.githubHandle}
+              </a>
+              <Badge className="bg-amber-100 text-amber-800">
+                Waiting for GitHub sign-in
+              </Badge>
+            </div>
+          )}
           {task.dueAt ? (
             <p className="flex items-center gap-2">
               <CalendarClock className="size-3.5" aria-hidden="true" />
@@ -75,9 +97,9 @@ export function TaskCard({
           <p>Estimated base reward: {task.estimatedBasePoints} points</p>
         </div>
 
-        {task.isCurrentUsersTask || editControl ? (
+        {showMovementControls || editControl ? (
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-            {task.isCurrentUsersTask &&
+            {showMovementControls &&
             task.status === "todo" &&
             !task.isFocusTask ? (
               <Button
@@ -91,7 +113,7 @@ export function TaskCard({
                 Choose as Focus
               </Button>
             ) : null}
-            {task.isCurrentUsersTask && task.status === "todo" ? (
+            {showMovementControls && task.status === "todo" ? (
               <Button
                 size="sm"
                 className="motion-reduce:transition-none"
@@ -101,7 +123,7 @@ export function TaskCard({
                 Start task
               </Button>
             ) : null}
-            {task.isCurrentUsersTask && task.status === "in_progress" ? (
+            {showMovementControls && task.status === "in_progress" ? (
               <>
                 <Button
                   size="sm"
@@ -123,7 +145,7 @@ export function TaskCard({
                 </Button>
               </>
             ) : null}
-            {task.isCurrentUsersTask && task.status === "done" ? (
+            {showMovementControls && task.status === "done" ? (
               <Button
                 size="sm"
                 variant="outline"

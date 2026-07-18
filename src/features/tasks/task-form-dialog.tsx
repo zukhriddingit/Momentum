@@ -25,6 +25,7 @@ import {
 } from "@/features/tasks/actions";
 import type {
   ProjectBoardView,
+  TaskAssigneeOption,
   TaskMutationReceipt,
   TaskStatus,
   TaskView,
@@ -33,7 +34,7 @@ import type {
 type TaskDialogProps = {
   actorId: string;
   projectId: string;
-  members: ProjectBoardView["members"];
+  assignees: ProjectBoardView["assignees"];
   triggerLabel?: string;
   onSaved: (receipt: TaskMutationReceipt) => void;
 } & ({ mode: "create"; task?: never } | { mode: "edit"; task: TaskView });
@@ -50,6 +51,36 @@ const STATUS_OPTIONS: Array<{ value: TaskStatus; label: string }> = [
   { value: "in_progress", label: "In Progress" },
   { value: "done", label: "Done" },
 ];
+
+type DecodedAssignee =
+  { kind: "member"; id: string } | { kind: "cohort"; id: string };
+
+function assigneeOptionKey(option: TaskAssigneeOption): string {
+  return option.kind === "member"
+    ? `member:${option.userId}`
+    : `cohort:${option.seatId}`;
+}
+
+function taskAssigneeKey(task: TaskView | undefined): string {
+  if (!task) {
+    return "";
+  }
+
+  return task.assignee.kind === "member"
+    ? `member:${task.assignee.userId}`
+    : `cohort:${task.assignee.seatId}`;
+}
+
+function decodeAssigneeKey(value: string): DecodedAssignee | null {
+  const separator = value.indexOf(":");
+  const kind = value.slice(0, separator);
+  const id = value.slice(separator + 1);
+  if (!id || (kind !== "member" && kind !== "cohort")) {
+    return null;
+  }
+
+  return { kind, id };
+}
 
 function localDateTimeValue(value: string | null | undefined): string {
   if (!value) {
@@ -89,14 +120,21 @@ export function TaskFormDialog(props: TaskDialogProps) {
   const sessionIdRef = useRef(0);
   const [displayState, setDisplayState] = useState<TaskActionState>(null);
   const [effort, setEffort] = useState<EffortLevel>(task?.effort ?? "medium");
-  const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? "");
+  const [selectedAssignee, setSelectedAssignee] = useState(
+    taskAssigneeKey(task),
+  );
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "todo");
   const id = useId();
   const triggerDisabled = task ? !task.permissions.canEdit : false;
   const assigneeDisabled = task ? !task.permissions.canReassign : false;
-  const canChooseDone = task
-    ? task.permissions.canComplete
-    : assigneeId === props.actorId;
+  const decodedAssignee = decodeAssigneeKey(selectedAssignee);
+  const pendingAssignee = decodedAssignee?.kind === "cohort";
+  const canChooseDone =
+    !pendingAssignee &&
+    (task
+      ? task.permissions.canComplete
+      : decodedAssignee?.kind === "member" &&
+        decodedAssignee.id === props.actorId);
   const statusIsLockedDone = status === "done" && !canChooseDone;
 
   const handleAction = useCallback(
@@ -109,7 +147,7 @@ export function TaskFormDialog(props: TaskDialogProps) {
         if (sessionIdRef.current === submittedSessionId) {
           if (!isEditing) {
             setEffort("medium");
-            setAssigneeId("");
+            setSelectedAssignee("");
             setStatus("todo");
           }
           setOpen(false);
@@ -135,15 +173,20 @@ export function TaskFormDialog(props: TaskDialogProps) {
       setSessionId(sessionIdRef.current);
       setDisplayState(null);
       setEffort(task?.effort ?? "medium");
-      setAssigneeId(task?.assigneeId ?? "");
+      setSelectedAssignee(taskAssigneeKey(task));
       setStatus(task?.status ?? "todo");
     }
     setOpen(nextOpen);
   }
 
-  function updateAssignee(nextAssigneeId: string): void {
-    setAssigneeId(nextAssigneeId);
-    if (status === "done" && nextAssigneeId !== props.actorId) {
+  function updateAssignee(nextAssignee: string): void {
+    const decoded = decodeAssigneeKey(nextAssignee);
+    setSelectedAssignee(nextAssignee);
+    if (
+      decoded?.kind === "cohort" ||
+      (status === "done" &&
+        (decoded?.kind !== "member" || decoded.id !== props.actorId))
+    ) {
       setStatus("todo");
     }
   }
@@ -179,6 +222,16 @@ export function TaskFormDialog(props: TaskDialogProps) {
         <form key={sessionId} action={formAction} className="mt-6 space-y-5">
           <input type="hidden" name="projectId" value={props.projectId} />
           {task ? <input type="hidden" name="taskId" value={task.id} /> : null}
+          <input
+            type="hidden"
+            name="assigneeKind"
+            value={decodedAssignee?.kind ?? ""}
+          />
+          <input
+            type="hidden"
+            name="assigneeId"
+            value={decodedAssignee?.id ?? ""}
+          />
 
           <div className="space-y-2">
             <Label htmlFor={`${id}-title`}>Title</Label>
@@ -233,8 +286,7 @@ export function TaskFormDialog(props: TaskDialogProps) {
               <Label htmlFor={`${id}-assignee`}>Assignee</Label>
               <Select
                 id={`${id}-assignee`}
-                name={assigneeDisabled ? undefined : "assigneeId"}
-                value={assigneeId}
+                value={selectedAssignee}
                 onChange={(event) => updateAssignee(event.target.value)}
                 required
                 disabled={pending || assigneeDisabled}
@@ -251,22 +303,24 @@ export function TaskFormDialog(props: TaskDialogProps) {
                 <option value="" disabled>
                   Choose an assignee
                 </option>
-                {props.members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.displayName}
+                {props.assignees.map((assignee) => (
+                  <option
+                    key={assigneeOptionKey(assignee)}
+                    value={assigneeOptionKey(assignee)}
+                  >
+                    {assignee.kind === "member"
+                      ? assignee.label
+                      : `@${assignee.githubHandle} — awaiting GitHub sign-in`}
                   </option>
                 ))}
               </Select>
               {assigneeDisabled ? (
-                <>
-                  <input type="hidden" name="assigneeId" value={assigneeId} />
-                  <p
-                    id={`${id}-assignee-help`}
-                    className="text-xs text-slate-500"
-                  >
-                    The assignee stays fixed after the first completion.
-                  </p>
-                </>
+                <p
+                  id={`${id}-assignee-help`}
+                  className="text-xs text-slate-500"
+                >
+                  The assignee stays fixed after the first completion.
+                </p>
               ) : null}
               {fieldErrors?.assigneeId?.[0] ? (
                 <p
@@ -341,7 +395,21 @@ export function TaskFormDialog(props: TaskDialogProps) {
 
             <div className="space-y-2">
               <Label htmlFor={`${id}-status`}>Status</Label>
-              {statusIsLockedDone ? (
+              {pendingAssignee ? (
+                <Select
+                  id={`${id}-status`}
+                  name="status"
+                  value="todo"
+                  disabled={pending}
+                  className="motion-reduce:transition-none"
+                  aria-invalid={fieldErrors?.status ? true : undefined}
+                  aria-describedby={
+                    fieldErrors?.status ? `${id}-status-error` : undefined
+                  }
+                >
+                  <option value="todo">To Do</option>
+                </Select>
+              ) : statusIsLockedDone ? (
                 <div className="space-y-2">
                   <input type="hidden" name="status" value="done" />
                   <Select

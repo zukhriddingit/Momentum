@@ -9,6 +9,7 @@ import { AppError } from "@/server/errors";
 import type {
   MembershipRole,
   ProjectBoardView,
+  TaskAssigneeView,
   TaskStatus,
 } from "@/server/types";
 
@@ -28,8 +29,10 @@ interface TaskRow {
   created_by: string;
   title: string;
   description: string | null;
-  assignee_id: string;
-  assignee_name: string;
+  assignee_id: string | null;
+  cohort_seat_id: string | null;
+  assignee_name: string | null;
+  cohort_github_handle: string | null;
   status: TaskStatus;
   effort: EffortLevel;
   due_at: Date | null;
@@ -39,6 +42,40 @@ interface TaskRow {
 interface MemberRow {
   id: string;
   display_name: string;
+}
+
+interface CohortSeatRow {
+  id: string;
+  github_handle: string;
+}
+
+function toTaskAssignee(task: TaskRow): TaskAssigneeView {
+  if (
+    task.assignee_id !== null &&
+    task.assignee_name !== null &&
+    task.cohort_seat_id === null
+  ) {
+    return {
+      kind: "member",
+      userId: task.assignee_id,
+      displayName: task.assignee_name,
+    };
+  }
+
+  if (
+    task.cohort_seat_id !== null &&
+    task.cohort_github_handle !== null &&
+    task.assignee_id === null
+  ) {
+    return {
+      kind: "cohort",
+      seatId: task.cohort_seat_id,
+      githubHandle: task.cohort_github_handle,
+      profileUrl: `https://github.com/${task.cohort_github_handle}`,
+    };
+  }
+
+  throw new AppError("INTERNAL", "Task assignee state was invalid.");
 }
 
 export async function getProjectBoard(input: {
@@ -74,7 +111,7 @@ export async function getProjectBoard(input: {
   }
 
   const workDate = toWorkDate(input.occurredAt, project.timezone);
-  const [tasks, focusRows, members] = await Promise.all([
+  const [tasks, focusRows, members, cohortSeats] = await Promise.all([
     sql<TaskRow[]>`
       select
         task.id,
@@ -82,7 +119,9 @@ export async function getProjectBoard(input: {
         task.title,
         task.description,
         task.assignee_id,
+        task.cohort_seat_id,
         assignee.display_name as assignee_name,
+        cohort_seat.github_handle as cohort_github_handle,
         task.status,
         task.effort,
         task.due_at,
@@ -92,7 +131,9 @@ export async function getProjectBoard(input: {
       join public.workspace_memberships as actor
         on actor.workspace_id = task_project.workspace_id
        and actor.user_id = ${input.actorId}
-      join public.profiles as assignee on assignee.id = task.assignee_id
+      left join public.profiles as assignee on assignee.id = task.assignee_id
+      left join public.workspace_cohort_seats as cohort_seat
+        on cohort_seat.id = task.cohort_seat_id
       where task.project_id = ${input.projectId}
       order by task.created_at, task.id
     `,
@@ -112,6 +153,16 @@ export async function getProjectBoard(input: {
       where member.workspace_id = ${project.workspace_id}
       order by profile.display_name, profile.id
     `,
+    sql<CohortSeatRow[]>`
+      select seat.id, seat.github_handle
+      from public.workspace_cohort_seats as seat
+      join public.workspace_memberships as actor
+        on actor.workspace_id = seat.workspace_id
+       and actor.user_id = ${input.actorId}
+      where seat.workspace_id = ${project.workspace_id}
+        and seat.user_id is null
+      order by seat.github_handle, seat.id
+    `,
   ]);
   const focusTaskId = focusRows[0]?.task_id ?? null;
 
@@ -124,30 +175,43 @@ export async function getProjectBoard(input: {
     workDate,
     celebrationAnimationEnabled: project.celebration_animation_enabled,
     actorRole: project.actor_role,
-    members: members.map((member) => ({
-      id: member.id,
-      displayName: member.display_name,
-    })),
-    tasks: tasks.map((task) => ({
-      id: task.id,
-      createdBy: task.created_by,
-      title: task.title,
-      description: task.description,
-      assigneeId: task.assignee_id,
-      assigneeName: task.assignee_name,
-      status: task.status,
-      effort: task.effort,
-      dueAt: task.due_at?.toISOString() ?? null,
-      estimatedBasePoints: basePointsForEffort(task.effort),
-      permissions: getTaskPermissions({
-        actorId: input.actorId,
-        role: project.actor_role,
+    assignees: [
+      ...members.map((member) => ({
+        kind: "member" as const,
+        userId: member.id,
+        label: member.display_name,
+      })),
+      ...cohortSeats.map((seat) => ({
+        kind: "cohort" as const,
+        seatId: seat.id,
+        label: `@${seat.github_handle}`,
+        githubHandle: seat.github_handle,
+      })),
+    ],
+    tasks: tasks.map((task) => {
+      const assignee = toTaskAssignee(task);
+
+      return {
+        id: task.id,
         createdBy: task.created_by,
-        assigneeId: task.assignee_id,
-        firstCompletedAt: task.first_completed_at,
-      }),
-      isCurrentUsersTask: task.assignee_id === input.actorId,
-      isFocusTask: task.id === focusTaskId,
-    })),
+        title: task.title,
+        description: task.description,
+        assignee,
+        status: task.status,
+        effort: task.effort,
+        dueAt: task.due_at?.toISOString() ?? null,
+        estimatedBasePoints: basePointsForEffort(task.effort),
+        permissions: getTaskPermissions({
+          actorId: input.actorId,
+          role: project.actor_role,
+          createdBy: task.created_by,
+          assigneeId: assignee.kind === "member" ? assignee.userId : null,
+          firstCompletedAt: task.first_completed_at,
+        }),
+        isCurrentUsersTask:
+          assignee.kind === "member" && assignee.userId === input.actorId,
+        isFocusTask: task.id === focusTaskId,
+      };
+    }),
   };
 }
