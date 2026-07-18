@@ -311,6 +311,7 @@ describe("cohort seat authorization and verified identity claims", () => {
 
   it("claims seats across workspaces, converts tasks, preserves roles, and is idempotent", async () => {
     const sql = database();
+    const currentVerifiedHandle = "kim-renamed";
     const firstSeat = await addCohortSeat(seatInput(ownerId));
     const secondWorkspace = await createWorkspace({
       actorId: ownerId,
@@ -350,7 +351,7 @@ describe("cohort seat authorization and verified identity claims", () => {
       actorId: claimantId,
       identity: {
         githubUserId: participant.githubUserId,
-        githubHandle: participant.githubHandle,
+        githubHandle: currentVerifiedHandle,
         displayName: "Kim Perpignant",
       },
       occurredAt,
@@ -399,22 +400,37 @@ describe("cohort seat authorization and verified identity claims", () => {
     );
     expect(
       await sql`
-        select id, user_id, claimed_at
+        select id, github_handle, user_id, claimed_at
         from public.workspace_cohort_seats
         where id in (${firstSeat.id}, ${secondSeat.id})
         order by id
       `,
     ).toEqual(
-      [firstSeat.id, secondSeat.id]
-        .sort()
-        .map((id) => ({ id, user_id: claimantId, claimed_at: occurredAt })),
+      [firstSeat.id, secondSeat.id].sort().map((id) => ({
+        id,
+        github_handle: participant.githubHandle,
+        user_id: claimantId,
+        claimed_at: occurredAt,
+      })),
     );
+    expect(
+      await sql`
+        select github_user_id::text, github_handle
+        from public.profiles
+        where id = ${claimantId}
+      `,
+    ).toEqual([
+      {
+        github_user_id: participant.githubUserId,
+        github_handle: currentVerifiedHandle,
+      },
+    ]);
 
     const second = await claimCohortSeats({
       actorId: claimantId,
       identity: {
         githubUserId: participant.githubUserId,
-        githubHandle: participant.githubHandle,
+        githubHandle: currentVerifiedHandle,
         displayName: "Kim Perpignant",
       },
       occurredAt: new Date("2026-07-18T15:05:00.000Z"),

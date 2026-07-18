@@ -187,7 +187,6 @@ export async function claimCohortSeats(input: {
     const claimedSeats = await sql<Array<{ id: string }>>`
       update public.workspace_cohort_seats
       set
-        github_handle = ${input.identity.githubHandle},
         user_id = ${input.actorId},
         claimed_at = ${input.occurredAt}
       where github_user_id = ${input.identity.githubUserId}::bigint
