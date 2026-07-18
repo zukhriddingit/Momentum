@@ -6,8 +6,10 @@ import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { TeamSection } from "@/features/cohort/team-section";
 import { ProjectFormDialog } from "@/features/projects/project-form-dialog";
 import { requireUser } from "@/server/auth/require-user";
+import { getCohortDirectory } from "@/server/cohort/github-directory";
 import { AppError } from "@/server/errors";
 import type { WorkspaceOverview } from "@/server/types";
 import { getWorkspaceOverview } from "@/server/workspaces/get-workspace-overview";
@@ -35,6 +37,7 @@ export default async function WorkspacePage({
 
   const canManageProjects =
     workspace.actorRole === "owner" || workspace.actorRole === "admin";
+  const directory = canManageProjects ? await getCohortDirectory() : null;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -53,6 +56,14 @@ export default async function WorkspacePage({
           <ProjectFormDialog workspaceId={workspace.id} />
         ) : null}
       </div>
+
+      <TeamSection
+        workspaceId={workspace.id}
+        actorRole={workspace.actorRole}
+        members={workspace.members}
+        pendingCohortSeats={workspace.pendingCohortSeats}
+        directory={directory}
+      />
 
       {workspace.projects.length > 0 ? (
         <section

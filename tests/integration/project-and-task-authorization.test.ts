@@ -188,6 +188,38 @@ describe("project authorization", () => {
         )
     `;
 
+    const pendingSeatId = selfServiceUuid(152);
+    await database()`
+      insert into public.workspace_cohort_seats (
+        id,
+        workspace_id,
+        github_user_id,
+        github_handle,
+        created_by
+      ) values (
+        ${pendingSeatId},
+        ${workspaceId},
+        445566771,
+        'overview-builder',
+        ${ownerId}
+      )
+    `;
+    await database()`
+      insert into public.workspace_cohort_seats (
+        id,
+        workspace_id,
+        github_user_id,
+        github_handle,
+        created_by
+      ) values (
+        ${selfServiceUuid(153)},
+        ${outsiderWorkspaceId},
+        445566772,
+        'foreign-builder',
+        ${outsiderId}
+      )
+    `;
+
     const overview = await getWorkspaceOverview({
       actorId: memberId,
       workspaceId,
@@ -207,6 +239,40 @@ describe("project authorization", () => {
       totalTasks: 2,
       percentComplete: 50,
     });
+    expect(overview.members).toEqual(
+      expect.arrayContaining([
+        {
+          id: ownerId,
+          displayName: "Project Owner",
+          role: "owner",
+          githubHandle: null,
+        },
+        {
+          id: adminId,
+          displayName: "Project Admin",
+          role: "admin",
+          githubHandle: null,
+        },
+        {
+          id: memberId,
+          displayName: "Project Member",
+          role: "member",
+          githubHandle: null,
+        },
+      ]),
+    );
+    expect(overview.members).toHaveLength(3);
+    expect(overview.pendingCohortSeats).toEqual([
+      {
+        id: pendingSeatId,
+        workspaceId,
+        githubUserId: "445566771",
+        githubHandle: "overview-builder",
+        profileUrl: "https://github.com/overview-builder",
+        userId: null,
+        claimedAt: null,
+      },
+    ]);
   });
 
   it("makes outsider and missing workspace overviews indistinguishable", async () => {

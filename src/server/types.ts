@@ -34,10 +34,29 @@ export interface ProjectSummary {
   description: string | null;
 }
 
+export interface WorkspaceMemberView {
+  id: string;
+  displayName: string;
+  role: MembershipRole;
+  githubHandle: string | null;
+}
+
+export interface PendingCohortSeatView {
+  id: string;
+  workspaceId: string;
+  githubUserId: string;
+  githubHandle: string;
+  profileUrl: string;
+  userId: null;
+  claimedAt: null;
+}
+
 export interface WorkspaceOverview {
   id: string;
   name: string;
   actorRole: MembershipRole;
+  members: WorkspaceMemberView[];
+  pendingCohortSeats: PendingCohortSeatView[];
   projects: Array<
     ProjectSummary & {
       doneTasks: number;

@@ -6,6 +6,7 @@ import type { CohortDirectoryEntry } from "@/server/cohort/types";
 import { closeDatabase, database } from "@/server/db/client";
 import { createProject } from "@/server/projects/create-project";
 import { createWorkspace } from "@/server/workspaces/create-workspace";
+import { requireWorkspaceManager } from "@/server/workspaces/require-workspace-manager";
 import { insertAuthUser, selfServiceUuid } from "../fixtures/self-service";
 
 const occurredAt = new Date("2026-07-18T15:00:00.000Z");
@@ -142,6 +143,34 @@ describe("cohort seat authorization and verified identity claims", () => {
 
   afterAll(async () => {
     await closeDatabase();
+  });
+
+  it("prechecks owner and admin access while hiding workspaces from everyone else", async () => {
+    await expect(
+      requireWorkspaceManager({ actorId: ownerId, workspaceId }),
+    ).resolves.toBeUndefined();
+    await expect(
+      requireWorkspaceManager({ actorId: adminId, workspaceId }),
+    ).resolves.toBeUndefined();
+
+    for (const deniedWorkspace of [workspaceId, selfServiceUuid(899)]) {
+      await expect(
+        requireWorkspaceManager({
+          actorId: memberId,
+          workspaceId: deniedWorkspace,
+        }),
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        message: "Workspace not found.",
+      });
+    }
+
+    await expect(
+      requireWorkspaceManager({ actorId: outsiderId, workspaceId }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "Workspace not found.",
+    });
   });
 
   it("allows owners and admins to add once while hiding the workspace from members and outsiders", async () => {
