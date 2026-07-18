@@ -22,6 +22,12 @@ pnpm dev:local
 Keep only local placeholder or local Supabase values in `.env.local`; it is
 ignored by Git. Never commit a populated environment file.
 
+`NEXT_PUBLIC_APP_URL` is the canonical public origin used to construct the
+OAuth return URL. Keep the local value at `http://127.0.0.1:3000`; hosted values
+must use HTTPS and the exact deployed origin. `GITHUB_DIRECTORY_TOKEN` is an
+optional, server-only GitHub API token that raises directory rate limits. It is
+not a GitHub OAuth client secret and must never use the `NEXT_PUBLIC_` prefix.
+
 Open `http://localhost:3000` and sign in with:
 
 - Email: `demo@momentum.local`
@@ -29,9 +35,31 @@ Open `http://localhost:3000` and sign in with:
 
 Alternatively, open `/sign-up` and create a local account with a display name, email, password of at least 12 characters, and valid IANA timezone such as `America/New_York`. Local email signup is enabled, email confirmation is disabled, and the new account receives an immediate session. The onboarding flow then creates an owner workspace and first project.
 
+Email/password authentication remains available. **Continue with GitHub** is an
+additive sign-in path for a real Supabase environment whose GitHub provider and
+callback URLs have been configured. Local automated tests do not contact
+GitHub OAuth; they exercise the verified-identity and claim boundaries with
+controlled fixtures.
+
 The first start intentionally launches only the Supabase services needed by this slice (PostgreSQL, Auth, PostgREST, and the API gateway). Reset the deterministic demo data with `pnpm supabase:reset`, and stop the local stack with `pnpm supabase:stop`.
 
-Database resets apply all migrations in order. The first creates the Slice 1 collaboration and reward model. The second adds atomic Auth-profile initialization, workspace-assignee validation, completed-assignee protection, indexes, and browser-role guardrails. The third adds immutable completion-message snapshots, motivation preferences, notification routing and deadline identities, and the complete MVP achievement catalog. The fourth adds append-only feedback submissions with per-user idempotency, validated field constraints, own-row RLS reads, and no browser writes. The conflict-safe seed then restores the demo workspace.
+Database resets apply all migrations in order. The first creates the Slice 1 collaboration and reward model. The second adds atomic Auth-profile initialization, workspace-assignee validation, completed-assignee protection, indexes, and browser-role guardrails. The third adds immutable completion-message snapshots, motivation preferences, notification routing and deadline identities, and the complete MVP achievement catalog. The fourth adds append-only feedback submissions with per-user idempotency, validated field constraints, own-row RLS reads, and no browser writes. The fifth adds verified GitHub profile identities, workspace-scoped pending cohort seats, exactly-one active-or-pending task assignment, claim-order constraints, and browser-role guardrails. The conflict-safe seed then restores the demo workspace.
+
+## Cohort assignment boundary
+
+Owners and admins can add a participant from the Hult Project 1 cohort
+directory by exact GitHub handle. Momentum reads that public directory only on
+the server, caches a validated live GitHub response for 15 minutes, and falls
+back to the committed July 18, 2026 snapshot when the live source is
+unavailable. A submitted handle is discovery metadata, not identity proof;
+GitHub's verified stable numeric user ID is the claim key.
+
+Before that person registers, Momentum represents them as a workspace-scoped
+pending seat. A task assigned to that seat remains To Do and cannot become
+Focus, start, complete, or trigger rewards. After Supabase verifies the same
+GitHub identity, one server-side transaction atomically claims every matching
+seat and activates its tasks for the new member. The claim is idempotent, and
+the existing trusted completion and exactly-once reward path remains unchanged.
 
 ## Environments and hosted setup
 
@@ -120,6 +148,7 @@ pnpm test:unit
 pnpm test:db
 pnpm test:integration
 pnpm test:e2e
+pnpm test:e2e -- tests/e2e/cohort-assignment.spec.ts
 pnpm test:demo
 pnpm test:e2e:demo
 pnpm check:secrets
@@ -160,12 +189,14 @@ secret scanning, and the Production build.
 
 The closed-pilot slice does not include Resend or production email delivery;
 SMS or phone collection; quiet hours; a production scheduler, deadline job
-scheduling, or notification-delivery workers; workspace invitations or member
-administration; public leaderboards or social feeds; billing; AI-generated
-motivation or AI decisions; complex analytics; native mobile applications; a
-feedback administration dashboard; a broad UI redesign; an observability
-vendor; or automatic Production migration/deployment. See the approved design
-and implementation plan under `docs/superpowers/` for the exact boundaries.
+scheduling, or notification-delivery workers; invitation delivery; manual
+GitHub identity linking; member removal or role-management UI; GitHub
+organization enforcement; public leaderboards or social feeds; billing;
+AI-generated motivation or AI decisions; complex analytics; native mobile
+applications; a feedback administration dashboard; a broad UI redesign; an
+observability vendor; or automatic Production migration/deployment. See the
+approved design and implementation plan under `docs/superpowers/` for the exact
+boundaries.
 
 The hosted production smoke test covers self-service signup and onboarding. The
 seeded 52-point guided-demo identity and reset workflow remain local/controlled

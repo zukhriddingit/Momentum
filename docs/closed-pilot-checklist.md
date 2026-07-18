@@ -15,10 +15,21 @@ that hosted environment are marked complete below.
       reset/provision configuration.
 - [ ] Supabase Auth Site URL and the local, Production, and restricted team
       preview redirect patterns were reviewed.
-- [ ] Password auth works; email confirmation, magic links, and OAuth remain
-      disabled while no callback route exists.
-- [x] Production password signup works with email confirmation disabled; no
-      OAuth provider is enabled in the hosted Supabase project.
+- [ ] The Production GitHub OAuth App uses homepage
+      `https://momentum-bay-two.vercel.app` and authorization callback
+      `https://mggneeapcgozymqnsjlk.supabase.co/auth/v1/callback`.
+- [ ] The GitHub client ID and secret are stored only in the matching Supabase
+      provider, and
+      `https://momentum-bay-two.vercel.app/auth/callback` is an allowed redirect.
+- [ ] `NEXT_PUBLIC_APP_URL` is the exact HTTPS application origin in each Vercel
+      scope; an optional `GITHUB_DIRECTORY_TOKEN` is server-only.
+- [ ] Migration `202607180005_cohort_assignment_github_oauth.sql` was dry-run,
+      reviewed, and applied before the application build that consumes it.
+- [ ] Password signup/sign-in still works after GitHub OAuth is enabled; GitHub
+      is additive rather than a replacement.
+- [x] On July 17, 2026, Production password signup worked with email
+      confirmation disabled; the GitHub provider had not yet been enabled in
+      the hosted Supabase project.
 - [x] The linked Supabase project reference is the intended target.
 - [x] `supabase db push --linked --dry-run` output was reviewed before the
       migration push.
@@ -36,12 +47,31 @@ that hosted environment are marked complete below.
 
 - [x] `GET /api/health` returned HTTP 200 with only
       status/environment/release/requestId and an `x-request-id` header.
+- [ ] After the cohort OAuth deployment, `GET /api/health` returned HTTP 200 and
+      its sanitized release value matched the commit under review.
 - [x] A fresh user signed up, created a workspace and project, then reloaded the
       hosted project URL with the authenticated session and data preserved.
+- [ ] The public repository was accessible to a signed-out reviewer, and a fresh
+      clone exposed the README, AGENTS.md, auth path, and task-assignment source.
+- [ ] Open self-service `/sign-up` created a fresh password account without
+      staff assistance.
+- [ ] An owner/admin added the second tester's exact handle from the Hult cohort
+      directory; an ordinary member could not add a cohort participant.
+- [ ] A task assigned to the pending handle stayed in To Do, displayed
+      **Waiting for @handle to join**, and exposed no Focus, Start, or Complete
+      action.
+- [ ] The assignee filter showed the pending participant's task and cleared back
+      to the complete board without changing task state.
+- [ ] In a separate browser session, the matching real GitHub account signed in
+      and atomically claimed the workspace seat and assigned task.
+- [ ] After claim, the second account selected Focus, started, completed, and
+      reloaded; points, streak, achievement, progress, message, and notification
+      persisted.
 - [ ] The complete guided demo in [demo-script.md](demo-script.md) passed at a
       desktop width.
-- [ ] At 390×844, navigation, task controls, feedback, and celebration dialogs
-      remained reachable without horizontal overflow.
+- [ ] At 390×844, Team discovery, task assignment, assignee filtering,
+      navigation, task controls, feedback, and celebration dialogs remained
+      reachable without horizontal overflow.
 - [ ] Keyboard-only navigation, Focus selection, Start, Complete, dialog focus
       trap/return, feedback submission, and notification navigation passed with
       visible focus.
@@ -51,6 +81,8 @@ that hosted environment are marked complete below.
       static celebration.
 - [ ] An inaccessible workspace/project URL returned the safe not-found
       experience without revealing tenant existence.
+- [ ] The claimed second account tried an unrelated workspace URL and received
+      the same safe not-found experience.
 - [ ] A second authorized tenant could not read or mutate the pilot workspace.
 - [ ] Reopening and recompleting a task created no additional points, streak
       transition, achievement, notification, or visual effect.
@@ -75,13 +107,21 @@ that hosted environment are marked complete below.
 
 - [x] `pnpm check:secrets` passed against the exact tracked release commit.
 - [x] `pnpm validate` passed, and its actual suite/assertion counts were saved.
+- [ ] The current release commit passed `pnpm check:secrets` after OAuth
+      configuration, and no OAuth secret or directory token appeared in source,
+      pull-request text, logs, or screenshots.
+- [ ] The cohort-specific browser test passed with
+      `pnpm test:e2e -- tests/e2e/cohort-assignment.spec.ts`; real OAuth was
+      verified separately with two accounts because automated tests do not
+      contact GitHub OAuth.
 - [ ] Pilot participants were told the known exclusions: no Resend/production
       email, SMS/phone collection, quiet hours, production scheduler or delivery
-      workers, deadline-job scheduling, invitations/member administration,
-      public leaderboard/social feed, billing, AI-authored motivation or AI
-      decisions, complex analytics, native mobile app, feedback admin dashboard,
-      broad redesign, observability vendor, or automatic Production
-      migration/deployment.
+      workers, deadline-job scheduling, invitation delivery, manual GitHub
+      identity linking, member removal or role-management UI, GitHub
+      organization enforcement, public leaderboard/social feed, billing,
+      AI-authored motivation or AI decisions, complex analytics, native mobile
+      app, feedback admin dashboard, broad redesign, observability vendor, or
+      automatic Production migration/deployment.
 - [ ] The incident procedure records the safe `x-request-id` without copying
       request bodies, credentials, personal data, task content, or feedback
       text.

@@ -34,6 +34,8 @@ placeholders locally. Do not commit populated environment files.
 | -------------------------------------- | --------------- | ----------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SUPABASE_URL`             | Public          | Environment-specific Supabase API URL.                                  |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public          | Browser-safe publishable key; never use a service-role credential.      |
+| `NEXT_PUBLIC_APP_URL`                  | Public          | Exact canonical application origin used for the OAuth return URL.       |
+| `GITHUB_DIRECTORY_TOKEN`               | Server only     | Optional GitHub API token for higher cohort-directory rate limits.      |
 | `DATABASE_URL`                         | Server only     | PostgreSQL connection, preferably the transaction pooler on Vercel.     |
 | `MOMENTUM_ENVIRONMENT`                 | Server/operator | One of `local`, `test`, `preview`, or `production`.                     |
 | `MOMENTUM_RELEASE`                     | Server          | Optional safe release label; Vercel commit SHA is the fallback.         |
@@ -46,18 +48,25 @@ placeholders locally. Do not commit populated environment files.
 | `MOMENTUM_SUPABASE_PROJECT_REF`        | Operator only   | Exact dedicated demo project reference checked by reset/provision.      |
 | `MOMENTUM_DEMO_BASE_URL`               | Operator only   | Base URL used by `pnpm demo:nudges`.                                    |
 
-Set the two `NEXT_PUBLIC_` values plus the server runtime values in the
+Set the three `NEXT_PUBLIC_` values plus the server runtime values in the
 appropriate Vercel Preview or Production scope. Keep the service-role key,
 demo identities, demo password, and project reference in the approved operator
 environment rather than the deployed browser bundle. Production never receives
 demo reset/provision configuration.
+
+`NEXT_PUBLIC_APP_URL` is public but must still be scoped correctly: Production
+uses `https://momentum-bay-two.vercel.app`; Preview uses the exact stable Preview
+origin allowed by its dedicated Supabase project. Do not use an arbitrary
+request `Host` header to construct OAuth callbacks. `GITHUB_DIRECTORY_TOKEN` is
+optional, server-only, and separate from the GitHub OAuth client secret stored
+in Supabase.
 
 Share the demo password only through the pilot's approved secret-sharing
 channel. Never paste a database URL, service-role key, password, publishable key
 from a private project, or job secret into source, tickets, chat transcripts,
 screenshots, or command output.
 
-## Supabase Auth URLs
+## GitHub OAuth and Supabase Auth URLs
 
 Use environment-specific Auth settings and keep the redirect allow-list narrow:
 
@@ -70,11 +79,35 @@ Use environment-specific Auth settings and keep the redirect allow-list narrow:
   controlled Vercel scope only
 
 Do not add a blanket redirect for unrelated domains. Momentum currently uses
-password authentication and has no authentication callback route. Hosted demo
-accounts are created already confirmed by the operator provisioner. Keep email
-confirmation, magic links, and OAuth providers disabled until a real callback
-route exists and its exact URL has been reviewed and added to the allow-list.
-Production email delivery is deliberately deferred.
+email/password authentication and keeps it available after GitHub OAuth is
+enabled. Hosted demo accounts are created already confirmed by the operator
+provisioner. Production email delivery remains deliberately deferred.
+
+Provision Production GitHub OAuth in this order. These are operator steps, not
+evidence that the current hosted environment has already been configured:
+
+1. Create a GitHub OAuth App. Set its homepage URL to
+   `https://momentum-bay-two.vercel.app` and its authorization callback URL to
+   `https://mggneeapcgozymqnsjlk.supabase.co/auth/v1/callback`.
+2. In Supabase Dashboard → Authentication → Providers → GitHub, enter the
+   GitHub client ID and client secret. Store them only there; neither belongs in
+   application environment variables or source.
+3. In Supabase Dashboard → Authentication → URL Configuration, add
+   `https://momentum-bay-two.vercel.app/auth/callback` to the redirect URLs.
+4. In Vercel Production, set
+   `NEXT_PUBLIC_APP_URL=https://momentum-bay-two.vercel.app`. In Preview, set it
+   to the exact stable Preview origin authorized by the dedicated Preview
+   Supabase project. Optionally set `GITHUB_DIRECTORY_TOKEN` as a server-only
+   variable in the scopes that need higher GitHub API rate limits.
+5. Apply migration
+   `202607180005_cohort_assignment_github_oauth.sql` manually to the Production
+   Supabase project before deploying the new application build.
+6. Never paste the GitHub OAuth client secret or directory token into GitHub
+   source, Vercel public variables, pull-request text, logs, or screenshots.
+
+A separate Preview Supabase project needs its own reviewed provider callback,
+application redirect URL, and stable Preview origin. Do not point a Preview
+deployment at the Production Auth project merely to reuse the OAuth App.
 
 ## Apply migrations deliberately
 
@@ -109,15 +142,18 @@ destructive and must never target shared or Production data.
 ## Deploy on Vercel
 
 1. Create separate Supabase projects for Preview/demo and Production.
-2. Configure the Auth Site URL and restricted redirect patterns above in each
-   project.
+2. Configure the Auth Site URL, restricted redirect patterns, and GitHub
+   provider above in each project without disabling password authentication.
 3. Add the matching variables to the Vercel Preview and Production scopes;
    verify the scope before saving every secret.
-4. Apply migrations explicitly with the reviewed Supabase CLI sequence.
+4. Apply migrations explicitly with the reviewed Supabase CLI sequence,
+   including `202607180005_cohort_assignment_github_oauth.sql` before the
+   application build that consumes it.
 5. Deploy with Vercel's normal Next.js install and `pnpm build` flow. Momentum
    needs no build-time migration hook.
-6. Verify health, password sign-in, an authenticated page, tenant isolation,
-   and the appropriate guided or Production smoke flow.
+6. Verify health, password sign-in, GitHub OAuth with two real accounts, an
+   authenticated page, tenant isolation, and the appropriate guided or
+   Production smoke flow.
 
 Use [Vercel's project dashboard](https://vercel.com/dashboard) for deployment
 and environment-scope management. This repository does not create a deployment
@@ -164,9 +200,11 @@ so a local validation run cannot claim them:
 - Vercel Preview and Production deployment success;
 - linked Supabase dry-run and migration output against each hosted project;
 - hosted Auth Site URL and redirect enforcement;
+- GitHub OAuth App, Supabase provider, application callback, and Vercel
+  `NEXT_PUBLIC_APP_URL` configuration;
 - operator provisioning/reset against the dedicated demo project;
-- hosted password sign-in, health, authenticated pages, tenant isolation, and
-  guided demo smoke checks;
+- hosted password sign-in, two-account GitHub claim, health, authenticated
+  pages, tenant isolation, and guided demo smoke checks;
 - live request-ID correlation in Vercel logs; and
 - rollback execution against a real deployment.
 
