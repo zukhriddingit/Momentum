@@ -14,12 +14,13 @@ numeric user ID is what claims the pending work.
 1. In the owner session, sign in with the existing email/password path. Point
    out that GitHub OAuth is additive and password authentication remains
    available.
-2. Open the workspace **Team** section, choose **Add cohort participant**, and
+2. Open the workspace **Team** section, choose **Add cohort member**, and
    search for the second account's exact GitHub handle. Add the validated cohort
    result. Only an owner or admin can perform this step.
-3. Create a task assigned to the new pending participant. Show that the board
-   labels it **Waiting for @handle to join**, keeps it in **To Do**, and does not
-   offer Focus, Start, or Complete controls.
+3. Create a task assigned to the new pending participant. Show that the task card
+   displays the participant's **@handle** with **Waiting for GitHub sign-in**,
+   keeps the task in **To Do**, and does not offer Focus, Start, or Complete
+   controls.
 4. Use the board's assignee filter to show only that pending participant, then
    clear the filter and confirm the task remains visible in To Do.
 5. In a separate private/incognito session, choose **Continue with GitHub** and

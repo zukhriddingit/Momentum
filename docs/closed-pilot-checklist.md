@@ -57,9 +57,9 @@ that hosted environment are marked complete below.
       staff assistance.
 - [ ] An owner/admin added the second tester's exact handle from the Hult cohort
       directory; an ordinary member could not add a cohort participant.
-- [ ] A task assigned to the pending handle stayed in To Do, displayed
-      **Waiting for @handle to join**, and exposed no Focus, Start, or Complete
-      action.
+- [ ] A task assigned to the pending handle stayed in To Do, displayed its
+      **@handle** with **Waiting for GitHub sign-in**, and exposed no Focus,
+      Start, or Complete action.
 - [ ] The assignee filter showed the pending participant's task and cleared back
       to the complete board without changing task state.
 - [ ] In a separate browser session, the matching real GitHub account signed in
