@@ -43,8 +43,7 @@ export default async function SignUpPage({
             <GitHubOAuthButton />
             <div
               className="flex items-center gap-3 text-xs font-medium text-slate-500"
-              role="separator"
-              aria-label="or continue with email"
+              aria-hidden="true"
             >
               <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
               <span>or continue with email</span>
