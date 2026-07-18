@@ -26,8 +26,8 @@ export const taskInputSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: nullableTrimmedText,
   assignee: z.discriminatedUnion("kind", [
-    z.object({ kind: z.literal("member"), userId: z.uuid() }),
-    z.object({ kind: z.literal("cohort"), seatId: z.uuid() }),
+    z.object({ kind: z.literal("member"), userId: z.uuid() }).strict(),
+    z.object({ kind: z.literal("cohort"), seatId: z.uuid() }).strict(),
   ]),
   effort: z.enum(["small", "medium", "large", "extra_large"]),
   dueAt: nullableIsoDateTime,

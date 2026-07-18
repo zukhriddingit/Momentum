@@ -70,6 +70,22 @@ describe("taskInputSchema", () => {
         ...validInput,
         assignee: { kind: "cohort", userId: crypto.randomUUID() },
       },
+      {
+        ...validInput,
+        assignee: {
+          kind: "member",
+          userId: crypto.randomUUID(),
+          seatId: crypto.randomUUID(),
+        },
+      },
+      {
+        ...validInput,
+        assignee: {
+          kind: "cohort",
+          seatId: crypto.randomUUID(),
+          userId: crypto.randomUUID(),
+        },
+      },
       { ...validInput, assignee: { kind: "unknown", id: crypto.randomUUID() } },
       { ...validInput, title: "" },
       { ...validInput, title: "x".repeat(201) },
