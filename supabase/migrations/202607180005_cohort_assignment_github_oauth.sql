@@ -62,6 +62,33 @@ using (public.is_workspace_member(workspace_id));
 
 grant select on public.workspace_cohort_seats to authenticated;
 
+create function public.validate_cohort_seat_claimed_identity()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.user_id is not null and not exists (
+    select 1
+    from public.profiles as profile
+    where profile.id = new.user_id
+      and profile.github_user_id = new.github_user_id
+  ) then
+    raise exception 'claimed cohort seat must match the profile GitHub identity'
+      using errcode = '23514';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.validate_cohort_seat_claimed_identity()
+from public, anon, authenticated;
+
+create trigger workspace_cohort_seat_verified_identity_matches
+before insert or update of github_user_id, user_id on public.workspace_cohort_seats
+for each row execute function public.validate_cohort_seat_claimed_identity();
+
 alter table public.tasks alter column assignee_id drop not null;
 
 alter table public.tasks
@@ -153,7 +180,9 @@ begin
 
   if old.user_id is not null
     and (
-      new.user_id is distinct from old.user_id
+      new.github_user_id is distinct from old.github_user_id
+      or new.github_handle is distinct from old.github_handle
+      or new.user_id is distinct from old.user_id
       or new.claimed_at is distinct from old.claimed_at
     ) then
     raise exception 'claimed cohort seat identity is immutable'
@@ -168,7 +197,7 @@ revoke all on function public.protect_cohort_seat_claim_order()
 from public, anon, authenticated;
 
 create trigger workspace_cohort_seat_claim_is_ordered
-before update of user_id, claimed_at on public.workspace_cohort_seats
+before update of github_user_id, github_handle, user_id, claimed_at on public.workspace_cohort_seats
 for each row execute function public.protect_cohort_seat_claim_order();
 
 create or replace function public.protect_task_first_completion()
@@ -210,16 +239,14 @@ declare
   requested_timezone text := nullif(metadata ->> 'timezone', '');
 begin
   requested_name := left(
-    trim(
-      coalesce(
-        nullif(metadata ->> 'display_name', ''),
-        nullif(metadata ->> 'full_name', ''),
-        nullif(metadata ->> 'name', ''),
-        nullif(metadata ->> 'user_name', ''),
-        nullif(metadata ->> 'preferred_username', ''),
-        nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
-        'Momentum member'
-      )
+    coalesce(
+      nullif(trim(metadata ->> 'display_name'), ''),
+      nullif(trim(metadata ->> 'full_name'), ''),
+      nullif(trim(metadata ->> 'name'), ''),
+      nullif(trim(metadata ->> 'user_name'), ''),
+      nullif(trim(metadata ->> 'preferred_username'), ''),
+      nullif(trim(split_part(coalesce(new.email, ''), '@', 1)), ''),
+      'Momentum member'
     ),
     80
   );

@@ -1,12 +1,18 @@
 begin;
 
-select plan(21);
+select plan(31);
 
 select has_column('public', 'profiles', 'github_user_id', 'profiles store stable GitHub IDs');
 select has_column('public', 'profiles', 'github_handle', 'profiles store normalized GitHub handles');
 select has_table('public', 'workspace_cohort_seats', 'workspace cohort seats exist');
 select has_column('public', 'tasks', 'cohort_seat_id', 'tasks can reference a pending cohort seat');
 select has_trigger('public', 'tasks', 'tasks_require_workspace_assignee', 'task assignment trigger remains installed');
+select has_trigger(
+  'public',
+  'workspace_cohort_seats',
+  'workspace_cohort_seat_verified_identity_matches',
+  'claimed cohort seats validate their stable GitHub identity'
+);
 
 insert into auth.users (
   instance_id,
@@ -96,6 +102,55 @@ select results_eq(
   $$,
   $$ values ('81000000-0000-4000-8000-000000000103'::uuid) $$,
   'GitHub auth initialization creates motivation preferences'
+);
+
+select lives_ok(
+  $$
+    insert into auth.users (
+      instance_id,
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at,
+      confirmation_token,
+      recovery_token,
+      email_change_token_new,
+      email_change
+    ) values (
+      '00000000-0000-0000-0000-000000000000',
+      '81000000-0000-4000-8000-000000000104',
+      'authenticated',
+      'authenticated',
+      'cohort-db-github-whitespace@momentum.local',
+      extensions.crypt('momentum-test', extensions.gen_salt('bf')),
+      now(),
+      '{"provider":"github","providers":["github"]}'::jsonb,
+      '{"full_name":"   ","user_name":"kperpignant"}'::jsonb,
+      now(),
+      now(),
+      '',
+      '',
+      '',
+      ''
+    )
+  $$,
+  'whitespace-only OAuth names fall through to the verified GitHub handle'
+);
+
+select results_eq(
+  $$
+    select display_name, timezone
+    from public.profiles
+    where id = '81000000-0000-4000-8000-000000000104'
+  $$,
+  $$ values ('kperpignant'::text, 'UTC'::text) $$,
+  'GitHub handle and UTC initialize the profile after a whitespace full name'
 );
 
 insert into public.workspaces (id, name, created_by)
@@ -445,6 +500,107 @@ select throws_ok(
   'a stable GitHub user can link to only one profile'
 );
 
+select throws_ok(
+  $$
+    insert into public.workspace_cohort_seats (
+      id,
+      workspace_id,
+      github_user_id,
+      github_handle,
+      user_id,
+      created_by,
+      claimed_at
+    ) values (
+      '84000000-0000-4000-8000-000000000106',
+      '82000000-0000-4000-8000-000000000101',
+      583231,
+      'octocat',
+      '81000000-0000-4000-8000-000000000103',
+      '81000000-0000-4000-8000-000000000101',
+      now()
+    )
+  $$,
+  '23514',
+  'claimed cohort seat must match the profile GitHub identity',
+  'a claimed seat insert must match the profile stable GitHub ID'
+);
+
+insert into public.workspace_cohort_seats (
+  id,
+  workspace_id,
+  github_user_id,
+  github_handle,
+  user_id,
+  created_by,
+  claimed_at
+)
+values (
+  '84000000-0000-4000-8000-000000000107',
+  '82000000-0000-4000-8000-000000000102',
+  227412781,
+  'kperpignant',
+  '81000000-0000-4000-8000-000000000103',
+  '81000000-0000-4000-8000-000000000102',
+  now()
+);
+
+select throws_ok(
+  $$
+    update public.workspace_cohort_seats
+    set
+      user_id = '81000000-0000-4000-8000-000000000103',
+      claimed_at = now()
+    where id = '84000000-0000-4000-8000-000000000102'
+  $$,
+  '23514',
+  'claimed cohort seat must match the profile GitHub identity',
+  'a claimed seat update must match the profile stable GitHub ID'
+);
+
+select throws_ok(
+  $$
+    update public.workspace_cohort_seats
+    set github_user_id = 583231
+    where id = '84000000-0000-4000-8000-000000000107'
+  $$,
+  '55000',
+  'claimed cohort seat identity is immutable',
+  'a claimed seat stable GitHub ID is immutable'
+);
+
+select throws_ok(
+  $$
+    update public.workspace_cohort_seats
+    set github_handle = 'renamed-member'
+    where id = '84000000-0000-4000-8000-000000000107'
+  $$,
+  '55000',
+  'claimed cohort seat identity is immutable',
+  'a claimed seat stored GitHub handle is immutable'
+);
+
+select throws_ok(
+  $$
+    update public.workspace_cohort_seats
+    set user_id = '81000000-0000-4000-8000-000000000101'
+    where id = '84000000-0000-4000-8000-000000000107'
+  $$,
+  '55000',
+  'claimed cohort seat identity is immutable',
+  'a claimed seat user is immutable'
+);
+
+select throws_ok(
+  $$
+    update public.workspace_cohort_seats
+    set claimed_at = claimed_at + interval '1 second'
+    where id = '84000000-0000-4000-8000-000000000107'
+  $$,
+  '55000',
+  'claimed cohort seat identity is immutable',
+  'a claimed seat timestamp is immutable'
+);
+
 select ok(
   not pg_catalog.has_table_privilege(
     'authenticated',
@@ -452,6 +608,30 @@ select ok(
     'INSERT,UPDATE,DELETE'
   ),
   'authenticated cannot mutate cohort seats directly'
+);
+
+select ok(
+  not pg_catalog.has_function_privilege(
+    'anon',
+    'public.validate_cohort_seat_claimed_identity()',
+    'EXECUTE'
+  )
+    and not pg_catalog.has_function_privilege(
+      'authenticated',
+      'public.validate_cohort_seat_claimed_identity()',
+      'EXECUTE'
+    )
+    and not pg_catalog.has_function_privilege(
+      'anon',
+      'public.protect_cohort_seat_claim_order()',
+      'EXECUTE'
+    )
+    and not pg_catalog.has_function_privilege(
+      'authenticated',
+      'public.protect_cohort_seat_claim_order()',
+      'EXECUTE'
+    ),
+  'browser roles cannot execute cohort-seat trigger helpers'
 );
 
 select set_config(
