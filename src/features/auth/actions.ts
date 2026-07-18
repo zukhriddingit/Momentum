@@ -6,10 +6,34 @@ import { z } from "zod";
 import { actionFailure, type ActionResult } from "@/features/action-result";
 import { signInSchema, signUpSchema } from "@/features/auth/schemas";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { readApplicationOrigin } from "@/server/auth/application-origin";
 import { ensureProfile } from "@/server/profiles/ensure-profile";
 
 export type SignInState = ActionResult<null> | null;
 export type SignUpState = ActionResult<null> | null;
+
+export async function startGitHubOAuthAction(): Promise<never> {
+  let redirectTo: string;
+  try {
+    redirectTo = `${readApplicationOrigin()}/auth/callback`;
+  } catch {
+    redirect("/sign-in?authError=github-start");
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "github",
+    options: {
+      redirectTo,
+      scopes: "read:user user:email",
+    },
+  });
+
+  if (error || !data.url) {
+    redirect("/sign-in?authError=github-start");
+  }
+  redirect(data.url);
+}
 
 export async function signInAction(
   _previousState: SignInState,

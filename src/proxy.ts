@@ -33,7 +33,8 @@ export async function proxy(request: NextRequest) {
     return finish(redirectResponse);
   };
   const isAuthPage = pathname === "/sign-in" || pathname === "/sign-up";
-  const isPublic = pathname === "/" || isAuthPage;
+  const isPublic =
+    pathname === "/" || pathname === "/auth/callback" || isAuthPage;
 
   if (!user && !isPublic) {
     const destination = request.nextUrl.clone();

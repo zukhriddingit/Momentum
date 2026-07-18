@@ -2,13 +2,22 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthErrorNotice } from "@/features/auth/auth-error-notice";
+import { GitHubOAuthButton } from "@/features/auth/github-oauth-button";
 import { SignInForm } from "@/features/auth/sign-in-form";
 import {
   isLocalCredentialHintVisible,
   readRuntimeEnvironment,
 } from "@/server/environment";
 
-export default function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ authError?: string | string[] }>;
+}) {
+  const { authError } = await searchParams;
+  const authErrorCode =
+    typeof authError === "string" ? authError : authError?.[0];
   const showLocalCredentials = isLocalCredentialHintVisible(
     readRuntimeEnvironment().name,
   );
@@ -35,7 +44,18 @@ export default function SignInPage() {
           <CardHeader>
             <CardTitle>Open the demo workspace</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-5">
+            <AuthErrorNotice code={authErrorCode} />
+            <GitHubOAuthButton />
+            <div
+              className="flex items-center gap-3 text-xs font-medium text-slate-500"
+              role="separator"
+              aria-label="or continue with email"
+            >
+              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+              <span>or continue with email</span>
+              <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+            </div>
             <SignInForm />
           </CardContent>
         </Card>
