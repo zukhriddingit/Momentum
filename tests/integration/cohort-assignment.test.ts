@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { calculatePointBreakdown } from "@/domain/rewards/calculate-point-breakdown";
 import { addCohortSeat } from "@/server/cohort/add-cohort-seat";
 import { claimCohortSeats } from "@/server/cohort/claim-cohort-seats";
 import type { CohortDirectoryEntry } from "@/server/cohort/types";
@@ -615,6 +616,154 @@ describe("cohort seat authorization and verified identity claims", () => {
         github_handle: currentVerifiedHandle,
       },
     ]);
+
+    const completionOccurredAt = new Date("2026-07-20T15:00:00.000Z");
+    const expectedPoints = calculatePointBreakdown({
+      effort: "medium",
+      dueAt: null,
+      completedAt: completionOccurredAt,
+      preCompletionStreak: 0,
+    });
+    await selectFocusTask({
+      actorId: claimantId,
+      taskId: firstTaskId,
+      occurredAt: completionOccurredAt,
+    });
+    await moveTask({
+      actorId: claimantId,
+      taskId: firstTaskId,
+      status: "in_progress",
+      occurredAt: completionOccurredAt,
+    });
+    const completion = await completeTask({
+      actorId: claimantId,
+      taskId: firstTaskId,
+      occurredAt: completionOccurredAt,
+    });
+    expect(completion).toMatchObject({
+      wasNewCompletion: true,
+      points: expectedPoints,
+      preCompletionStreak: 0,
+      postCompletionStreak: 1,
+      streakIncremented: true,
+      achievements: [
+        { code: "first_step", name: "First Step" },
+        { code: "focused_finish", name: "Focused Finish" },
+      ],
+    });
+
+    interface CompletionArtifacts {
+      completion_count: number;
+      completion_id: string | null;
+      completion_pre_streak: number | null;
+      completion_post_streak: number | null;
+      focus_selection_count: number;
+      completed_focus_selection_count: number;
+      ledger_count: number;
+      ledger_points: number;
+      minimum_ledger_points: number | null;
+      streak_row_count: number;
+      current_streak: number | null;
+      longest_streak: number | null;
+      achievement_count: number;
+      notification_count: number;
+      task_status: string;
+    }
+
+    const loadCompletionArtifacts = async (): Promise<CompletionArtifacts> => {
+      const [artifacts] = await sql<CompletionArtifacts[]>`
+        select
+          (select count(*)::integer
+             from public.task_completions
+            where task_id = ${firstTaskId}) as completion_count,
+          (select id::text
+             from public.task_completions
+            where task_id = ${firstTaskId}) as completion_id,
+          (select pre_completion_streak
+             from public.task_completions
+            where task_id = ${firstTaskId}) as completion_pre_streak,
+          (select post_completion_streak
+             from public.task_completions
+            where task_id = ${firstTaskId}) as completion_post_streak,
+          (select count(*)::integer
+             from public.focus_selections
+            where task_id = ${firstTaskId}) as focus_selection_count,
+          (select count(*)::integer
+             from public.focus_selections
+            where task_id = ${firstTaskId}
+              and completed_at is not null) as completed_focus_selection_count,
+          (select count(*)::integer
+             from public.point_ledger
+            where completion_id = ${completion.completionId}) as ledger_count,
+          (select coalesce(sum(points), 0)::integer
+             from public.point_ledger
+            where completion_id = ${completion.completionId}) as ledger_points,
+          (select min(points)::integer
+             from public.point_ledger
+            where completion_id = ${completion.completionId}) as minimum_ledger_points,
+          (select count(*)::integer
+             from public.focus_streaks
+            where user_id = ${claimantId}) as streak_row_count,
+          (select current_count
+             from public.focus_streaks
+            where user_id = ${claimantId}) as current_streak,
+          (select longest_count
+             from public.focus_streaks
+            where user_id = ${claimantId}) as longest_streak,
+          (select count(*)::integer
+             from public.achievement_grants
+            where completion_id = ${completion.completionId}) as achievement_count,
+          (select count(*)::integer
+             from public.notifications
+            where source_id = ${completion.completionId}) as notification_count,
+          task.status::text as task_status
+        from public.tasks as task
+        where task.id = ${firstTaskId}
+      `;
+      if (!artifacts) {
+        throw new Error("Expected claimed-task completion artifacts.");
+      }
+      return artifacts;
+    };
+
+    const artifactsBeforeReopen = await loadCompletionArtifacts();
+    expect(artifactsBeforeReopen).toEqual({
+      completion_count: 1,
+      completion_id: completion.completionId,
+      completion_pre_streak: 0,
+      completion_post_streak: 1,
+      focus_selection_count: 1,
+      completed_focus_selection_count: 1,
+      ledger_count: 1,
+      ledger_points: expectedPoints.finalPoints,
+      minimum_ledger_points: expectedPoints.finalPoints,
+      streak_row_count: 1,
+      current_streak: 1,
+      longest_streak: 1,
+      achievement_count: 2,
+      notification_count: 1,
+      task_status: "done",
+    });
+
+    await moveTask({
+      actorId: claimantId,
+      taskId: firstTaskId,
+      status: "in_progress",
+      occurredAt: completionOccurredAt,
+    });
+    const recompletion = await completeTask({
+      actorId: claimantId,
+      taskId: firstTaskId,
+      occurredAt: completionOccurredAt,
+    });
+    expect(recompletion).toMatchObject({
+      completionId: completion.completionId,
+      wasNewCompletion: false,
+      points: expectedPoints,
+    });
+    await expect(loadCompletionArtifacts()).resolves.toEqual(
+      artifactsBeforeReopen,
+    );
 
     const second = await claimCohortSeats({
       actorId: claimantId,
