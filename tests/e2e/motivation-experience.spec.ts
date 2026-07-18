@@ -52,7 +52,9 @@ test("personal motivation settings persist across completions and deadline nudge
   await page.goto(projectUrl);
   await page.getByRole("button", { name: "Create task" }).click();
   await page.getByLabel("Title").fill(completedTaskName);
-  await page.getByLabel("Assignee").selectOption({ label: displayName });
+  await page
+    .getByLabel("Assignee", { exact: true })
+    .selectOption({ label: displayName });
   await page.getByRole("button", { name: "Create task" }).click();
 
   const todoColumn = page.getByRole("region", { name: "To Do" });
@@ -109,7 +111,9 @@ test("personal motivation settings persist across completions and deadline nudge
   await page.goto(projectUrl);
   await page.getByRole("button", { name: "Create task" }).click();
   await page.getByLabel("Title").fill(deadlineTaskName);
-  await page.getByLabel("Assignee").selectOption({ label: displayName });
+  await page
+    .getByLabel("Assignee", { exact: true })
+    .selectOption({ label: displayName });
   await page
     .getByLabel("Deadline (optional)")
     .fill(demoNudgeDueAt().toISOString().slice(0, 16));

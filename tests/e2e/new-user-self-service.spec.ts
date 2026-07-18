@@ -41,7 +41,9 @@ test("new user builds and persists their first focused win", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Create task" }).click();
   await page.getByLabel("Title").fill(taskName);
-  await page.getByLabel("Assignee").selectOption({ label: displayName });
+  await page
+    .getByLabel("Assignee", { exact: true })
+    .selectOption({ label: displayName });
   await expect(page.getByLabel("Effort")).toHaveValue("medium");
   await expect(page.getByTestId("base-point-estimate")).toContainText(
     "Estimated base reward: 40 points",
