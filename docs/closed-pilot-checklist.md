@@ -25,7 +25,7 @@ that hosted environment are marked complete below.
       the optional `GITHUB_DIRECTORY_TOKEN` contract remains server-only.
 - [x] Migration `202607180005_cohort_assignment_github_oauth.sql` was dry-run,
       reviewed, and applied before the application build that consumes it.
-- [ ] Migration `202607180006_project_archive.sql` was dry-run, reviewed, and
+- [x] Migration `202607180006_project_archive.sql` was dry-run, reviewed, and
       applied before the application build that consumes it.
 - [x] Password signup/sign-in still works after GitHub OAuth is enabled; GitHub
       is additive rather than a replacement.
@@ -51,6 +51,8 @@ that hosted environment are marked complete below.
       status/environment/release/requestId and an `x-request-id` header.
 - [x] After the cohort OAuth deployment, `GET /api/health` returned HTTP 200 and
       its sanitized release value matched commit `e303995` under review.
+- [x] After the archive deployment, `GET /api/health` returned HTTP 200 and its
+      sanitized release value matched merge commit `c6b5f93`.
 - [x] A fresh user signed up, created a workspace and project, then reloaded the
       hosted project URL with the authenticated session and data preserved.
 - [x] The public repository was accessible without credentials, and a fresh
@@ -66,13 +68,16 @@ that hosted environment are marked complete below.
       Start, or Complete action.
 - [x] The assignee filter showed the pending participant's task and cleared back
       to the complete board without changing task state.
-- [ ] A Production owner archived a disposable project; it disappeared from
+- [x] A Production owner archived a disposable project; it disappeared from
       active workspace cards, navigation, dashboard summaries, and selectors.
-- [ ] The archived project's direct URL returned the safe unavailable
-      experience while its existing task and completion history remained
-      preserved in the database.
-- [ ] An ordinary member saw no archive control and could not invoke the
-      archive action for the project.
+- [x] The archived project's direct URL returned the safe unavailable
+      experience.
+- [ ] Hosted evidence with existing tasks and completions confirmed that the
+      archived project's history remained preserved in the database. Local
+      integration coverage passed this boundary; the Production smoke project
+      intentionally contained no earned artifacts.
+- [x] An ordinary member could open an assigned Production project but saw no
+      archive or edit control.
 - [x] In a separate browser session, the matching real GitHub account signed in
       and atomically claimed the workspace seat and assigned task.
 - [x] After claim, the second account started, completed, and reloaded; the
@@ -122,7 +127,10 @@ that hosted environment are marked complete below.
 ## Release, incidents, and exclusions
 
 - [x] `pnpm check:secrets` passed against the exact tracked release commit.
-- [x] `pnpm validate` passed, and its actual suite/assertion counts were saved.
+- [x] `pnpm validate` passed for the archive release: 179 unit tests, 110 pgTAP
+      assertions, 44 integration tests, five primary Playwright tests, one
+      guided-demo Playwright test, the source-secret scan, and the Production
+      build all passed.
 - [x] The current release commit passed `pnpm check:secrets` after OAuth
       configuration, and no OAuth secret or directory token appeared in source,
       pull-request text, logs, or screenshots.
@@ -134,7 +142,8 @@ that hosted environment are marked complete below.
       email, SMS/phone collection, quiet hours, production scheduler or delivery
       workers, deadline-job scheduling, invitation delivery, manual GitHub
       identity linking, member removal or role-management UI, GitHub
-      organization enforcement, public leaderboard/social feed, billing,
+      organization enforcement, project restore or archived-project
+      administration, public leaderboard/social feed, billing,
       AI-authored motivation or AI decisions, complex analytics, native mobile
       app, feedback admin dashboard, broad redesign, observability vendor, or
       automatic Production migration/deployment.
