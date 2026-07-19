@@ -145,7 +145,8 @@ export async function completeTaskInTransaction(
       on preference.user_id = task.assignee_id
     where task.id = ${input.taskId}
       and task.assignee_id = ${input.actorId}
-    for update of task
+      and project.archived_at is null
+    for update of task, project
   `;
   const task = taskRows[0];
   if (!task) {

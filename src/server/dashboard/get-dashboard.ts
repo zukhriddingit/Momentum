@@ -110,7 +110,9 @@ export async function getDashboard(input: {
         project.name as project_name
       from public.focus_selections as focus
       join public.tasks as task on task.id = focus.task_id
-      join public.projects as project on project.id = task.project_id
+      join public.projects as project
+        on project.id = task.project_id
+       and project.archived_at is null
       where focus.user_id = ${input.actorId}
         and focus.work_date = ${workDate}
     `,
@@ -181,6 +183,7 @@ export async function getDashboard(input: {
         on membership.workspace_id = project.workspace_id
         and membership.user_id = ${input.actorId}
       join public.project_progress as progress on progress.project_id = project.id
+      where project.archived_at is null
       order by project.created_at
     `,
     sql<Array<{ title: string; body: string }>>`

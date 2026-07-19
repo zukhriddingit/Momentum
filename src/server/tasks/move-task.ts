@@ -50,7 +50,8 @@ export async function moveTask(input: {
         and membership.user_id = ${input.actorId}
       where task.id = ${input.taskId}
         and task.assignee_id = ${input.actorId}
-      for update of task
+        and project.archived_at is null
+      for update of task, project
     `;
     const task = rows[0];
     if (!task) {

@@ -98,6 +98,7 @@ export async function updateTask(input: {
         on membership.workspace_id = project.workspace_id
        and membership.user_id = ${input.actorId}
       where task.id = ${input.taskId}
+        and project.archived_at is null
       for update of task, project, membership
     `;
     if (!task) {

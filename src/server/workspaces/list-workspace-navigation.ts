@@ -26,6 +26,7 @@ export async function listWorkspaceNavigation(input: {
       on workspace.id = membership.workspace_id
     left join public.projects as project
       on project.workspace_id = workspace.id
+     and project.archived_at is null
     where membership.user_id = ${input.actorId}
     order by
       workspace.created_at,

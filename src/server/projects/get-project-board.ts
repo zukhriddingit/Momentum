@@ -104,6 +104,7 @@ export async function getProjectBoard(input: {
     left join public.motivation_preferences as preference
       on preference.user_id = profile.id
     where project.id = ${input.projectId}
+      and project.archived_at is null
   `;
   const project = projectRows[0];
   if (!project) {

@@ -77,6 +77,7 @@ export async function getWorkspaceOverview(input: {
       left join public.project_progress as progress
         on progress.project_id = project.id
       where project.workspace_id = ${workspace.id}
+        and project.archived_at is null
       order by project.created_at, project.id
     `,
     sql<WorkspaceMemberRow[]>`

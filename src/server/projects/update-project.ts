@@ -26,6 +26,7 @@ export async function updateProject(input: {
        and membership.user_id = ${input.actorId}
        and membership.role in ('owner', 'admin')
       where project.id = ${input.projectId}
+        and project.archived_at is null
       for update of project
     `;
 

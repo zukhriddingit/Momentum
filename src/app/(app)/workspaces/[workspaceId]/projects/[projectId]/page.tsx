@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
-import { CelebrationDialog } from "@/features/tasks/celebration-dialog";
+import { ArchiveProjectDialog } from "@/features/projects/archive-project-dialog";
 import { ProjectFormDialog } from "@/features/projects/project-form-dialog";
+import { CelebrationDialog } from "@/features/tasks/celebration-dialog";
 import { KanbanBoard } from "@/features/tasks/kanban-board";
 import { requireUser } from "@/server/auth/require-user";
 import { requestNow } from "@/server/clock";
@@ -86,15 +87,21 @@ export default async function ProjectPage({
             {board.workDate}
           </p>
           {canManageProject ? (
-            <ProjectFormDialog
-              workspaceId={workspaceId}
-              project={{
-                id: board.id,
-                workspaceId,
-                name: board.name,
-                description: board.description,
-              }}
-            />
+            <>
+              <ProjectFormDialog
+                workspaceId={workspaceId}
+                project={{
+                  id: board.id,
+                  workspaceId,
+                  name: board.name,
+                  description: board.description,
+                }}
+              />
+              <ArchiveProjectDialog
+                projectId={board.id}
+                workspaceId={workspaceId}
+              />
+            </>
           ) : null}
         </div>
       </div>
