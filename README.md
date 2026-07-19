@@ -8,6 +8,11 @@ self-service workspace/project/task management and deployment-ready operations
 for a guided demo and small closed pilot; it is deliberately not a general
 enterprise project-management suite.
 
+Workspace owners and admins can archive a project when it is no longer active.
+Archived projects leave active navigation, dashboards, and boards while their
+tasks, completions, point-ledger entries, achievements, notifications, and
+Focus history remain preserved.
+
 ## Local setup
 
 Requirements: Node.js 20.9 or newer, pnpm 11, Docker Desktop, and the Supabase CLI installed through the project dependencies.
@@ -43,7 +48,7 @@ controlled fixtures.
 
 The first start intentionally launches only the Supabase services needed by this slice (PostgreSQL, Auth, PostgREST, and the API gateway). Reset the deterministic demo data with `pnpm supabase:reset`, and stop the local stack with `pnpm supabase:stop`.
 
-Database resets apply all migrations in order. The first creates the Slice 1 collaboration and reward model. The second adds atomic Auth-profile initialization, workspace-assignee validation, completed-assignee protection, indexes, and browser-role guardrails. The third adds immutable completion-message snapshots, motivation preferences, notification routing and deadline identities, and the complete MVP achievement catalog. The fourth adds append-only feedback submissions with per-user idempotency, validated field constraints, own-row RLS reads, and no browser writes. The fifth adds verified GitHub profile identities, workspace-scoped pending cohort seats, exactly-one active-or-pending task assignment, claim-order constraints, and browser-role guardrails. The conflict-safe seed then restores the demo workspace.
+Database resets apply all migrations in order. The first creates the Slice 1 collaboration and reward model. The second adds atomic Auth-profile initialization, workspace-assignee validation, completed-assignee protection, indexes, and browser-role guardrails. The third adds immutable completion-message snapshots, motivation preferences, notification routing and deadline identities, and the complete MVP achievement catalog. The fourth adds append-only feedback submissions with per-user idempotency, validated field constraints, own-row RLS reads, and no browser writes. The fifth adds verified GitHub profile identities, workspace-scoped pending cohort seats, exactly-one active-or-pending task assignment, claim-order constraints, and browser-role guardrails. The sixth adds the timestamped, history-preserving project archive lifecycle. The conflict-safe seed then restores the demo workspace.
 
 ## Cohort assignment boundary
 
@@ -194,7 +199,8 @@ The closed-pilot slice does not include Resend or production email delivery;
 SMS or phone collection; quiet hours; a production scheduler, deadline job
 scheduling, or notification-delivery workers; invitation delivery; manual
 GitHub identity linking; member removal or role-management UI; GitHub
-organization enforcement; public leaderboards or social feeds; billing;
+organization enforcement; project restore or archived-project administration;
+public leaderboards or social feeds; billing;
 AI-generated motivation or AI decisions; complex analytics; native mobile
 applications; a feedback administration dashboard; a broad UI redesign; an
 observability vendor; or automatic Production migration/deployment. See the

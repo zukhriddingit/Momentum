@@ -37,6 +37,12 @@ export interface ProjectSummary {
   description: string | null;
 }
 
+export interface ArchiveProjectReceipt {
+  projectId: string;
+  workspaceId: string;
+  archivedAt: string;
+}
+
 export interface WorkspaceMemberView {
   id: string;
   displayName: string;

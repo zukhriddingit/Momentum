@@ -26,4 +26,6 @@ export const updateProjectSchema = projectSchema.extend({
   projectId: z.uuid(),
 });
 
+export const archiveProjectSchema = z.object({ projectId: z.uuid() }).strict();
+
 export type ProjectInput = z.infer<typeof projectSchema>;

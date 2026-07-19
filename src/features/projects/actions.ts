@@ -5,15 +5,19 @@ import { z } from "zod";
 
 import { actionFailure, type ActionResult } from "@/features/action-result";
 import {
+  archiveProjectSchema,
   createProjectSchema,
   updateProjectSchema,
 } from "@/features/projects/schemas";
 import { requireUser } from "@/server/auth/require-user";
+import { archiveProject } from "@/server/projects/archive-project";
 import { createProject } from "@/server/projects/create-project";
 import { updateProject } from "@/server/projects/update-project";
-import type { ProjectSummary } from "@/server/types";
+import type { ArchiveProjectReceipt, ProjectSummary } from "@/server/types";
 
 export type ProjectActionState = ActionResult<ProjectSummary> | null;
+export type ArchiveProjectActionState =
+  ActionResult<ArchiveProjectReceipt> | null;
 
 export async function createProjectAction(
   _previousState: ProjectActionState,
@@ -73,6 +77,40 @@ export async function updateProjectAction(
     });
     revalidateProjectPaths(project);
     return { ok: true, data: project };
+  } catch (error) {
+    return actionFailure(error);
+  }
+}
+
+export async function archiveProjectAction(
+  _previousState: ArchiveProjectActionState,
+  formData: FormData,
+): Promise<ArchiveProjectActionState> {
+  const parsed = archiveProjectSchema.safeParse({
+    projectId: formData.get("projectId"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: "VALIDATION",
+      message: "That project could not be archived. Refresh and try again.",
+    };
+  }
+
+  try {
+    const user = await requireUser();
+    const receipt = await archiveProject({
+      actorId: user.id,
+      projectId: parsed.data.projectId,
+    });
+    revalidatePath("/", "layout");
+    revalidatePath("/dashboard");
+    revalidatePath("/onboarding");
+    revalidatePath(`/workspaces/${receipt.workspaceId}`);
+    revalidatePath(
+      `/workspaces/${receipt.workspaceId}/projects/${receipt.projectId}`,
+    );
+    return { ok: true, data: receipt };
   } catch (error) {
     return actionFailure(error);
   }

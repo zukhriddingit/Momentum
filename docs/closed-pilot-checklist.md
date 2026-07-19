@@ -25,6 +25,8 @@ that hosted environment are marked complete below.
       the optional `GITHUB_DIRECTORY_TOKEN` contract remains server-only.
 - [x] Migration `202607180005_cohort_assignment_github_oauth.sql` was dry-run,
       reviewed, and applied before the application build that consumes it.
+- [ ] Migration `202607180006_project_archive.sql` was dry-run, reviewed, and
+      applied before the application build that consumes it.
 - [x] Password signup/sign-in still works after GitHub OAuth is enabled; GitHub
       is additive rather than a replacement.
 - [x] On July 17, 2026, Production password signup worked with email
@@ -64,6 +66,13 @@ that hosted environment are marked complete below.
       Start, or Complete action.
 - [x] The assignee filter showed the pending participant's task and cleared back
       to the complete board without changing task state.
+- [ ] A Production owner archived a disposable project; it disappeared from
+      active workspace cards, navigation, dashboard summaries, and selectors.
+- [ ] The archived project's direct URL returned the safe unavailable
+      experience while its existing task and completion history remained
+      preserved in the database.
+- [ ] An ordinary member saw no archive control and could not invoke the
+      archive action for the project.
 - [x] In a separate browser session, the matching real GitHub account signed in
       and atomically claimed the workspace seat and assigned task.
 - [x] After claim, the second account started, completed, and reloaded; the

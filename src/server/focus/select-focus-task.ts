@@ -32,7 +32,8 @@ export async function selectFocusTask(input: {
       join public.profiles as profile on profile.id = ${input.actorId}
       where task.id = ${input.taskId}
         and task.assignee_id = ${input.actorId}
-      for update of task
+        and project.archived_at is null
+      for update of task, project
     `;
     const authorized = authorizedRows[0];
     if (!authorized) {

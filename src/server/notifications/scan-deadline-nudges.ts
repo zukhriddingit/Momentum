@@ -42,12 +42,13 @@ export async function scanDeadlineNudges(input: {
       join public.profiles as profile on profile.id = task.assignee_id
       join public.motivation_preferences as preference
         on preference.user_id = task.assignee_id
-      where task.status <> 'done'
+      where project.archived_at is null
+        and task.status <> 'done'
         and task.due_at is not null
         and task.due_at <= ${input.occurredAt} + interval '24 hours'
         and preference.deadline_nudges_enabled
       order by task.due_at, task.id
-      for update of task skip locked
+      for update of task, project skip locked
     `;
     let createdCount = 0;
 

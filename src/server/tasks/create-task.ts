@@ -35,6 +35,7 @@ export async function createTask(input: {
         on actor_membership.workspace_id = project.workspace_id
        and actor_membership.user_id = ${input.actorId}
       where project.id = ${input.projectId}
+        and project.archived_at is null
       for update of project, actor_membership
     `;
     if (!project) {

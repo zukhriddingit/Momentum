@@ -99,9 +99,9 @@ evidence that the current hosted environment has already been configured:
    to the exact stable Preview origin authorized by the dedicated Preview
    Supabase project. Optionally set `GITHUB_DIRECTORY_TOKEN` as a server-only
    variable in the scopes that need higher GitHub API rate limits.
-5. Apply migration
-   `202607180005_cohort_assignment_github_oauth.sql` manually to the Production
-   Supabase project before deploying the new application build.
+5. Apply migrations `202607180005_cohort_assignment_github_oauth.sql` and
+   `202607180006_project_archive.sql` manually to the Production Supabase
+   project before deploying the application builds that consume them.
 6. Never paste the GitHub OAuth client secret or directory token into GitHub
    source, Vercel public variables, pull-request text, logs, or screenshots.
 
@@ -147,8 +147,9 @@ destructive and must never target shared or Production data.
 3. Add the matching variables to the Vercel Preview and Production scopes;
    verify the scope before saving every secret.
 4. Apply migrations explicitly with the reviewed Supabase CLI sequence,
-   including `202607180005_cohort_assignment_github_oauth.sql` before the
-   application build that consumes it.
+   including `202607180005_cohort_assignment_github_oauth.sql` and
+   `202607180006_project_archive.sql` before the application builds that
+   consume them.
 5. Deploy with Vercel's normal Next.js install and `pnpm build` flow. Momentum
    needs no build-time migration hook.
 6. Verify health, password sign-in, GitHub OAuth with two real accounts, an
@@ -204,7 +205,8 @@ so a local validation run cannot claim them:
   `NEXT_PUBLIC_APP_URL` configuration;
 - operator provisioning/reset against the dedicated demo project;
 - hosted password sign-in, two-account GitHub claim, health, authenticated
-  pages, tenant isolation, and guided demo smoke checks;
+  pages, tenant isolation, project archive authorization/history preservation,
+  and guided demo smoke checks;
 - live request-ID correlation in Vercel logs; and
 - rollback execution against a real deployment.
 

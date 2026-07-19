@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { closeDatabase, database } from "@/server/db/client";
 import { scanDeadlineNudges } from "@/server/notifications/scan-deadline-nudges";
+import { archiveProject } from "@/server/projects/archive-project";
 import { createProject } from "@/server/projects/create-project";
 import { createTask } from "@/server/tasks/create-task";
 import { createWorkspace } from "@/server/workspaces/create-workspace";
@@ -55,6 +56,12 @@ describe("deadline nudge scanner", () => {
       name: "Deadline Project",
       description: null,
     });
+    const archivedProject = await createProject({
+      actorId: userId,
+      workspaceId: workspace.id,
+      name: "Archived Deadline Project",
+      description: null,
+    });
 
     const createDeadlineTask = (input: {
       title: string;
@@ -97,6 +104,18 @@ describe("deadline nudge scanner", () => {
           dueAt: addHours(occurredAt, 1),
         }),
       ]);
+    const archivedTask = await createTask({
+      actorId: userId,
+      projectId: archivedProject.id,
+      title: "Archived due soon task",
+      description: null,
+      assignee: { kind: "member", userId },
+      effort: "small",
+      dueAt: addHours(occurredAt, 1),
+      status: "todo",
+      occurredAt,
+    });
+    await archiveProject({ actorId: userId, projectId: archivedProject.id });
     await database()`
       update public.tasks
       set status = 'done'
@@ -141,6 +160,14 @@ describe("deadline nudge scanner", () => {
         task_id: overdue.taskId,
       }),
     ]);
+    const [archivedNotificationCount] = await database()<
+      Array<{ count: number }>
+    >`
+      select count(*)::integer as count
+      from public.notifications
+      where task_id = ${archivedTask.taskId}
+    `;
+    expect(archivedNotificationCount?.count).toBe(0);
 
     const changedDeadline = addHours(occurredAt, 23);
     await database()`

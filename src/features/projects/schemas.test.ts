@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import { projectSchema } from "@/features/projects/schemas";
+import {
+  archiveProjectSchema,
+  projectSchema,
+} from "@/features/projects/schemas";
+
+describe("archiveProjectSchema", () => {
+  it("accepts only a UUID project ID", () => {
+    const projectId = "30000000-0000-4000-8000-000000000001";
+    expect(archiveProjectSchema.parse({ projectId })).toEqual({ projectId });
+    expect(
+      archiveProjectSchema.safeParse({ projectId: "not-a-uuid" }).success,
+    ).toBe(false);
+    expect(
+      archiveProjectSchema.safeParse({ projectId, archived: true }).success,
+    ).toBe(false);
+  });
+});
 
 describe("projectSchema", () => {
   it("trims a valid name and description", () => {

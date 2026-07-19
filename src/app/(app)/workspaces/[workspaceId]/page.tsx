@@ -16,10 +16,15 @@ import { getWorkspaceOverview } from "@/server/workspaces/get-workspace-overview
 
 export default async function WorkspacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspaceId: string }>;
+  searchParams: Promise<{ projectArchived?: string | string[] }>;
 }) {
-  const { workspaceId } = await params;
+  const [{ workspaceId }, query] = await Promise.all([params, searchParams]);
+  const projectArchived = Array.isArray(query.projectArchived)
+    ? undefined
+    : query.projectArchived;
   if (!z.uuid().safeParse(workspaceId).success) {
     notFound();
   }
@@ -56,6 +61,15 @@ export default async function WorkspacePage({
           <ProjectFormDialog workspaceId={workspace.id} />
         ) : null}
       </div>
+
+      {projectArchived === "1" ? (
+        <p
+          role="status"
+          className="mb-6 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
+        >
+          Project archived. Its history is preserved.
+        </p>
+      ) : null}
 
       <TeamSection
         workspaceId={workspace.id}
